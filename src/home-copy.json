@@ -1,0 +1,241 @@
+{
+  "fr": {
+    "nav": ["Acheter", "Vendre", "Notre approche", "Ressources"],
+    "account": "Espace client",
+    "eyebrow": "Montréal, à votre façon",
+    "heroTitle": "Votre projet immobilier mérite plus qu’une simple annonce.",
+    "heroText": "Commencez votre vente à votre rythme. Ajoutez une séance photo, une analyse de marché ou un accompagnement professionnel quand vous en avez besoin.",
+    "buy": "Je veux acheter",
+    "sell": "Je veux vendre",
+    "searchPlaceholder": "Ville, quartier ou code postal",
+    "searchButton": "Rechercher",
+    "trust": [
+      "Courtier à vos côtés",
+      "Commission transparente",
+      "Service en 3 langues"
+    ],
+    "routeEyebrow": "Choisissez votre parcours",
+    "routeTitle": "Un accompagnement qui s’adapte à vous.",
+    "sellerTitle": "Vous vendez",
+    "sellerText": "Évaluation, mise en marché et négociation : vous choisissez le niveau d’accompagnement.",
+    "sellerPoints": [
+      "Analyse du prix",
+      "Photos et visibilité",
+      "Gestion des offres"
+    ],
+    "sellerCta": "Estimer ma propriété",
+    "buyerTitle": "Vous achetez",
+    "buyerText": "Des propriétés bien ciblées, une lecture claire des risques et un appui solide à la négociation.",
+    "buyerPoints": [
+      "Recherche personnalisée",
+      "Visites organisées",
+      "Stratégie d’offre"
+    ],
+    "buyerCta": "Démarrer ma recherche",
+    "differenceEyebrow": "La différence MaisonÀVendre",
+    "differenceTitle": "La technologie pour avancer. Un humain pour décider.",
+    "differenceText": "Notre plateforme centralise votre projet. Votre courtier reste responsable du conseil, des vérifications et de la négociation.",
+    "featureTitles": [
+      "Tarification expliquée",
+      "Dossier en temps réel",
+      "Conseil trilingue"
+    ],
+    "featureTexts": [
+      "La commission et les services inclus sont confirmés avant le mandat.",
+      "Visites, documents et prochaines étapes réunis au même endroit.",
+      "Communiquez en français, en anglais ou en chinois selon votre préférence."
+    ],
+    "calcEyebrow": "Avant de signer",
+    "calcTitle": "Voyez ce qui compte vraiment dans votre vente.",
+    "calcText": "Entrez une valeur approximative pour visualiser les éléments à discuter avec votre courtier. Ceci n’est pas une soumission.",
+    "calcSeller": "Vendeur",
+    "calcBuyer": "Acheteur",
+    "propertyValue": "Valeur de la propriété",
+    "estimated": "Prix estimé",
+    "strategy": "Stratégie recommandée",
+    "strategyText": "Évaluation comparative + plan de mise en marché",
+    "buyerBudget": "Budget d’achat",
+    "buyerPlan": "Plan de recherche",
+    "buyerPlanText": "Secteurs, financement et critères prioritaires",
+    "calcCta": "Parler à un courtier",
+    "processEyebrow": "Simple du début à la fin",
+    "processTitle": "Trois étapes, un seul point de contact.",
+    "steps": [
+      [
+        "01",
+        "On clarifie votre projet",
+        "Objectifs, échéancier, budget et niveau de service."
+      ],
+      [
+        "02",
+        "On prépare la stratégie",
+        "Prix, présentation, recherche ou offre selon votre situation."
+      ],
+      [
+        "03",
+        "On vous accompagne jusqu’à la signature",
+        "Suivi, négociation et coordination des documents."
+      ]
+    ],
+    "ctaTitle": "Parlons de votre prochain déménagement.",
+    "ctaText": "Une première conversation sans pression, dans la langue qui vous convient.",
+    "name": "Nom complet",
+    "email": "Courriel",
+    "phone": "Téléphone",
+    "project": "Votre projet en quelques mots",
+    "contact": "Demander un appel",
+    "sent": "Merci — votre demande est prête. Un conseiller pourra vous recontacter.",
+    "footer": "Montréal · Français, English, 中文",
+    "legal": "Confidentialité · Conditions · OACIQ"
+  },
+  "en": {
+    "nav": ["Buy", "Sell", "Our approach", "Resources"],
+    "account": "Client portal",
+    "eyebrow": "Montréal real estate, your way",
+    "heroTitle": "Your real estate project deserves more than a listing.",
+    "heroText": "Start your sale at your own pace. Add photography, market analysis or professional support whenever you need it.",
+    "buy": "I want to buy",
+    "sell": "I want to sell",
+    "searchPlaceholder": "City, neighbourhood or postal code",
+    "searchButton": "Search",
+    "trust": [
+      "A broker by your side",
+      "Transparent commission",
+      "Service in 3 languages"
+    ],
+    "routeEyebrow": "Choose your path",
+    "routeTitle": "Support designed around you.",
+    "sellerTitle": "You’re selling",
+    "sellerText": "Valuation, marketing and negotiation: choose the level of support you need.",
+    "sellerPoints": [
+      "Pricing analysis",
+      "Photos and exposure",
+      "Offer management"
+    ],
+    "sellerCta": "Estimate my property",
+    "buyerTitle": "You’re buying",
+    "buyerText": "Focused property matches, a clear view of risks and strong negotiation support.",
+    "buyerPoints": [
+      "Personalized search",
+      "Organized visits",
+      "Offer strategy"
+    ],
+    "buyerCta": "Start my search",
+    "differenceEyebrow": "The MaisonÀVendre difference",
+    "differenceTitle": "Technology to move faster. A human to decide wisely.",
+    "differenceText": "Our platform keeps your project in one place. Your broker remains responsible for advice, checks and negotiation.",
+    "featureTitles": [
+      "Clear pricing",
+      "Live project file",
+      "Trilingual advice"
+    ],
+    "featureTexts": [
+      "Commission and included services are confirmed before the mandate.",
+      "Visits, documents and next steps are gathered in one place.",
+      "Communicate in French, English or Chinese—whichever feels best."
+    ],
+    "calcEyebrow": "Before you sign",
+    "calcTitle": "See what really matters in your transaction.",
+    "calcText": "Enter an approximate value to see the items to discuss with your broker. This is not a quote.",
+    "calcSeller": "Seller",
+    "calcBuyer": "Buyer",
+    "propertyValue": "Property value",
+    "estimated": "Estimated price",
+    "strategy": "Recommended strategy",
+    "strategyText": "Comparative market analysis + launch plan",
+    "buyerBudget": "Purchase budget",
+    "buyerPlan": "Search plan",
+    "buyerPlanText": "Areas, financing and priority criteria",
+    "calcCta": "Talk to a broker",
+    "processEyebrow": "Simple from start to finish",
+    "processTitle": "Three steps, one point of contact.",
+    "steps": [
+      [
+        "01",
+        "We clarify your project",
+        "Goals, timeline, budget and service level."
+      ],
+      [
+        "02",
+        "We prepare the strategy",
+        "Price, presentation, search or offer—based on your needs."
+      ],
+      [
+        "03",
+        "We stay through the signing",
+        "Follow-up, negotiation and document coordination."
+      ]
+    ],
+    "ctaTitle": "Let’s talk about your next move.",
+    "ctaText": "A pressure-free first conversation, in the language you prefer.",
+    "name": "Full name",
+    "email": "Email",
+    "phone": "Phone",
+    "project": "Tell us briefly about your project",
+    "contact": "Request a call",
+    "sent": "Thank you — your request is ready. An advisor can follow up with you.",
+    "footer": "Montréal · Français, English, 中文",
+    "legal": "Privacy · Terms · OACIQ"
+  },
+  "zh": {
+    "nav": ["买房", "卖房", "我们的服务", "房产资讯"],
+    "account": "客户中心",
+    "eyebrow": "蒙特利尔卖房，按您的节奏",
+    "heroTitle": "您的房产计划，不应该只是一条网上广告。",
+    "heroText": "暂时不想找经纪，也可以开始卖房。摄影、市场分析、专业咨询，按需要逐步添加，整个项目都在同一个工作台。",
+    "buy": "我要买房",
+    "sell": "我要卖房",
+    "searchPlaceholder": "城市、社区或邮编",
+    "searchButton": "搜索房源",
+    "trust": ["经纪全程协助", "佣金清楚透明", "法英中三语服务"],
+    "routeEyebrow": "选择您的计划",
+    "routeTitle": "服务跟着您的需要走。",
+    "sellerTitle": "我要卖房",
+    "sellerText": "从估价、宣传到谈判，您可以选择适合自己的服务范围。",
+    "sellerPoints": ["市场价格分析", "专业展示和曝光", "报价管理与谈判"],
+    "sellerCta": "评估我的房产",
+    "buyerTitle": "我要买房",
+    "buyerText": "帮您筛选合适房源、看清潜在风险，并在报价谈判时站在您这一边。",
+    "buyerPoints": ["个性化找房", "安排看房", "制定报价策略"],
+    "buyerCta": "开始找房",
+    "differenceEyebrow": "MaisonÀVendre 的特色",
+    "differenceTitle": "科技让流程更快，经纪让决定更稳。",
+    "differenceText": "平台集中管理看房、文件和进度；经纪负责专业建议、核查风险和谈判。",
+    "featureTitles": ["收费提前讲清", "进度随时查看", "真正三语沟通"],
+    "featureTexts": [
+      "签委托前确认佣金、服务内容及可能产生的费用。",
+      "看房、文件和下一步安排集中在同一个地方。",
+      "您可以使用法语、英语或中文沟通，不必担心专业词汇。"
+    ],
+    "calcEyebrow": "签约之前",
+    "calcTitle": "先看清交易中真正重要的数字。",
+    "calcText": "输入大概金额，了解需要和经纪讨论的重点。本工具不是正式报价。",
+    "calcSeller": "卖家",
+    "calcBuyer": "买家",
+    "propertyValue": "房产估计价值",
+    "estimated": "估计售价",
+    "strategy": "建议方案",
+    "strategyText": "同类房产对比分析 + 上市推广计划",
+    "buyerBudget": "买房预算",
+    "buyerPlan": "找房计划",
+    "buyerPlanText": "区域、贷款能力和优先条件",
+    "calcCta": "咨询经纪",
+    "processEyebrow": "流程简单清楚",
+    "processTitle": "三个阶段，同一位联系人跟进。",
+    "steps": [
+      ["01", "先了解您的计划", "确认目标、时间、预算和需要的服务。"],
+      ["02", "制定具体策略", "根据情况准备定价、展示、找房或报价方案。"],
+      ["03", "陪您走到签字完成", "跟进进度、协助谈判并协调所需文件。"]
+    ],
+    "ctaTitle": "聊聊您的下一步房产计划。",
+    "ctaText": "第一次沟通没有压力，您可以使用最舒服的语言。",
+    "name": "姓名",
+    "email": "电子邮箱",
+    "phone": "联系电话",
+    "project": "简单介绍您的买房或卖房计划",
+    "contact": "预约电话沟通",
+    "sent": "谢谢，您的咨询已经准备好，经纪可以随后与您联系。",
+    "footer": "蒙特利尔 · 法语 / 英语 / 中文",
+    "legal": "隐私政策 · 使用条款 · OACIQ"
+  }
+}
