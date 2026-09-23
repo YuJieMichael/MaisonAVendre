@@ -5,9 +5,11 @@ const digest=async(value:string)=>Array.from(new Uint8Array(await crypto.subtle.
 Deno.serve(async request=>{
   let origin:string;
   try{origin=new URL(Deno.env.get('APP_ORIGIN')||'').origin;}catch{return Response.json({error:'unavailable'},{status:503});}
-  const headers={'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Headers':'content-type,apikey','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store','Vary':'Origin'};
+  const requestOrigin=request.headers.get('origin');
+  const allowed=[origin,'http://127.0.0.1:5173'];
+  const headers={'Access-Control-Allow-Origin':allowed.includes(requestOrigin||'')?requestOrigin!:origin,'Access-Control-Allow-Headers':'content-type,apikey','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store','Vary':'Origin'};
   const reply=(status:number,body:unknown)=>Response.json(body,{status,headers});
-  if(request.headers.get('origin')!==origin)return reply(403,{error:'forbidden'});
+  if(!allowed.includes(requestOrigin||''))return reply(403,{error:'forbidden'});
   if(request.method==='OPTIONS')return new Response(null,{status:204,headers});
   if(request.method!=='POST')return reply(405,{error:'method'});
   let input:ReturnType<typeof parseListingInput>, fingerprint:string;

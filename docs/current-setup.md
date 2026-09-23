@@ -1,33 +1,21 @@
-# Development setup / Configuration locale / 本机开发配置
+# Connected environment / Environnement connecté / 连接状态
+
+Updated 23 September 2026.
 
 ## English
 
-Verified on 23 September 2026. Supabase project `usngcexxobcpjncuwaxo` (MaisonAVendre) is in Canada Central. The initial migration was applied through SQL Editor: four private business tables have RLS enabled, anonymous table reads are denied, six public RPCs exist, and `project-files` is a private bucket with a 10 MiB per-file limit.
+Supabase project MaisonAVendre (usngcexxobcpjncuwaxo) is in Canada Central. Migrations 001, 002 and 003 were applied manually using SQL Editor. Reconcile the schema and repair CLI migration history before db push; do not replay these migrations. The enquiry and listing tables have RLS. Both project-files and listing-photos buckets are private. Anonymous HTTP checks can read only the public catalogue; private enquiry and submission reads are denied.
 
-Site URL is `http://127.0.0.1:5173/`; the exact permitted callback is `http://127.0.0.1:5173/#auth/callback`. Email confirmation, secure password changes and TOTP MFA are enabled. The local `.env.local` holds only the project URL and publishable key and is ignored by Git. Other installations must supply their own local environment file.
+The new Sites project is recorded in .openai/hosting.json and starts owner-private. Its configured origin is https://maisonavendre-quebec.peachy-calf-6266.chatgpt.site. This is also Supabase APP_ORIGIN and Auth Site URL. Exact /#auth/callback redirects are configured for this origin and http://127.0.0.1:5173. The original maisonavendre.xieyujieee.chatgpt.site site is unchanged. A Sites deployment success response, not this configuration file, establishes deployment completion.
 
-`invite-staff` was deployed through the Dashboard as a single-file composition of the repository's entry point and shared invitation modules. `APP_ORIGIN` is the local site URL. The legacy JWT gateway check is off; the handler verifies the Auth user, signed JWT claims, MFA and active owner membership on every invitation. An unauthenticated request was verified to return `401 authentication_required`. Redeploy from the canonical repository sources when changing this function.
+invite-staff, submit-enquiry and submit-listing are deployed. Public intake requests using the publishable API key reach validation without a user session; invalid input returns 400 and disallowed origins return 403. No default gateway switch was changed for these new intake functions. invite-staff retains its own signed identity, confirmed email, active owner and MFA checks. Browser environment files contain only public project settings and feature flags and are not committed.
 
-The migration was **not** recorded by the CLI. Before a future `supabase db push`, compare the deployed schema and mark migration `202609230001` applied using the CLI's migration repair workflow. Do not execute the initial SQL again.
-
-Still pending: the owner's website registration and email verification, reviewed owner-role assignment and MFA enrollment, real signed-in upload/save checks, and a production SMTP provider. No invitation emails or real customer accounts were created during configuration. The original hosted website has not been redeployed. The property catalogue is fictional and independent of private customer files.
+Enquiry collection is enabled for this deployment build. CSV email delivery remains disabled pending Resend sender credentials and the scheduled worker. Listing submission stays in preview until owner registration and review testing are complete. The intended owner is achat.vente.garderie@gmail.com; this website account was not registered at the last check. Registration, email verification, explicit owner assignment and TOTP enrollment remain to be completed by/with the user. No real or fake production leads/listings have been created during setup. A positive real enquiry save and an actual photo upload/review/unpublish cycle remain unverified. Catalogue examples are clearly fictional.
 
 ## Français
 
-Vérifié le 23 septembre 2026. Le projet Supabase MaisonAVendre (`usngcexxobcpjncuwaxo`) est situé au Canada Central. La migration initiale a été exécutée dans SQL Editor : quatre tables privées avec RLS, six fonctions RPC et le bucket privé `project-files` (10 Mio par fichier). Les lectures anonymes sont refusées.
-
-L’application locale utilise `http://127.0.0.1:5173/` et le retour exact `/#auth/callback`. Confirmation du courriel, changement sécurisé du mot de passe et TOTP MFA activés. La connexion locale se trouve dans `.env.local`, ignoré par Git. Le service `invite-staff` est déployé avec une validation du compte, du JWT signé, du MFA et du rôle propriétaire ; une requête anonyme retourne 401.
-
-La migration n’est pas enregistrée dans l’historique CLI : vérifiez le schéma et marquez `202609230001` comme appliquée avant un futur déploiement CLI. Ne relancez pas le SQL initial.
-
-À terminer : inscription et validation du courriel du propriétaire, attribution contrôlée du rôle et MFA, essais connectés de sauvegarde et de fichiers, SMTP de production et publication du site. Aucun compte client ni courriel d’invitation créé pendant la configuration. Le catalogue reste fictif.
+Les migrations 001–003 sont appliquées. Les données privées et les photos sont protégées. Les fonctions de collecte sont déployées et la collecte des demandes est activée dans cette version. L’envoi des lots CSV attend Resend. Le dépôt d’annonces reste en aperçu jusqu’à la création du compte administrateur et aux essais de validation avec MFA. Le nouveau site commence en accès privé; l’ancien site reste inchangé.
 
 ## 中文
 
-2026 年 9 月 23 日已连接 MaisonAVendre 项目（`usngcexxobcpjncuwaxo`），位于加拿大中部。已建立四张启用 RLS 的业务表、六个数据库函数，以及每个文件上限 10 MiB 的私有 `project-files` 存储桶；匿名访问已验证会被拒绝。
-
-本地地址固定为 `http://127.0.0.1:5173/`，登录回跳为 `http://127.0.0.1:5173/#auth/callback`。已开启邮箱验证、安全修改密码和验证器 MFA。连接信息只在本机 `.env.local` 中，不提交 GitHub。管理员邀请函数已部署，内置身份、签名令牌、MFA 和所有者身份校验；匿名请求返回 401。
-
-初始化通过 SQL Editor 完成。以后使用 Supabase CLI 前，先核对云端结构，再将 `202609230001` 标记为已应用；不要重复运行初始化 SQL。
-
-待完成：你的网站账号注册与邮箱验证、所有者授权与 MFA、登录后真实保存及上传测试，以及正式发信服务。此次配置没有创建客户账号或发送邀请邮件。原公开网站尚未重新部署；房源目录仍是明确标注的示例数据。
+数据库迁移 001–003、咨询和房源接口已部署，私人资料与照片受权限保护。当前构建启用买卖咨询收集；满 10 条发送邮件仍待 Resend 配置。卖家房源提交暂保留预览，需先完成管理员注册、邮箱验证、授权与双重验证，再测试审核发布。新网站初始为仅所有者访问，原网址未修改。尚未用真实客户信息测试保存，也未完成真实照片上传及审核全流程。
