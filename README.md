@@ -8,6 +8,8 @@ Montréal real estate homepage, trilingual seller workspace and Supabase backend
 
 ## 本地运行 / Run locally
 
+Windows 用户可以先看 [中文手动启动说明](docs/local-start.zh-CN.md)，包含首次安装、以后启动、停止服务和从 GitHub 更新的步骤。
+
 Use Node.js 22.18+ or a supported newer LTS release.
 
 ```sh
