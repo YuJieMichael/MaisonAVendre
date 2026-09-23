@@ -1,0 +1,424 @@
+import {
+  createContext, useCallback, useContext, useEffect, useRef, useState,
+  type FormEvent, type ReactNode,
+} from "react";
+import type { Session, User } from "@supabase/supabase-js";
+import { ArrowRight, CheckCircle2, House, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
+import type { Language } from "./seller-copy";
+import { authCallbackUrl, backendConfigured, supabase } from "./lib/supabase";
+import "./auth.css";
+
+type StaffRole = "owner" | "operator" | null;
+type Assurance = "aal1" | "aal2" | null;
+type AuthState = {
+  user: User | null;
+  session: Session | null;
+  loading: boolean;
+  staffRole: StaffRole;
+  aal: Assurance;
+  error: string | null;
+  callbackPending: boolean;
+  callbackError: string | null;
+  recoverySession: boolean;
+  invitationSession: boolean;
+  signOut: () => Promise<void>;
+  refreshAuth: () => Promise<void>;
+  clearRecovery: () => void;
+};
+const AuthContext = createContext<AuthState | null>(null);
+
+function messageOf(error: unknown): string {
+  return error instanceof Error ? error.message : typeof error === "object" && error && "message" in error
+    ? String(error.message) : "Unable to connect. Please try again.";
+}
+
+// Reuse a callback exchange during StrictMode remounts. Auth codes are single use.
+let callbackExchange: Promise<{ invitation: boolean; recovery: boolean }> | null = null;
+let callbackKey = "";
+let callbackRecoveryObserved = false;
+function exchangeCallback() {
+  const url = new URL(window.location.href);
+  const fragment = url.hash.replace(/^#/, "");
+  const fragmentParams = new URLSearchParams(fragment.includes("?") ? fragment.split("?").slice(1).join("?") : fragment);
+  const code = url.searchParams.get("code") || fragmentParams.get("code");
+  const error = url.searchParams.get("error_description") || fragmentParams.get("error_description");
+  const accessToken = fragmentParams.get("access_token");
+  const refreshToken = fragmentParams.get("refresh_token");
+  if (!code && !accessToken && !error) return null;
+  const key = code || accessToken || error || "";
+  if (callbackExchange && callbackKey === key) return callbackExchange;
+  callbackKey = key;
+  callbackRecoveryObserved = false;
+  callbackExchange = (async () => {
+    try {
+      if (error) throw new Error(error);
+      if (!supabase) throw new Error("Authentication is not configured.");
+      if (code) {
+        const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        if (exchangeError) throw exchangeError;
+        if (!data.session) throw new Error("This link has expired. Please request another one.");
+        return { invitation: false, recovery: callbackRecoveryObserved };
+      }
+      if (!accessToken || !refreshToken) throw new Error("This link is incomplete. Please request another one.");
+      const { data, error: exchangeError } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+      if (exchangeError) throw exchangeError;
+      if (!data.session) throw new Error("This link has expired. Please request another one.");
+      // Supabase validates the supplied tokens; a hash route alone never grants a session.
+      return { invitation: fragmentParams.get("type") === "invite", recovery: fragmentParams.get("type") === "recovery" };
+    } finally {
+      url.searchParams.delete("code");
+      url.searchParams.delete("error");
+      url.searchParams.delete("error_code");
+      url.searchParams.delete("error_description");
+      url.hash = "auth/callback";
+      window.history.replaceState(null, "", url);
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    }
+  })();
+  return callbackExchange;
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(backendConfigured);
+  const [staffRole, setStaffRole] = useState<StaffRole>(null);
+  const [aal, setAal] = useState<Assurance>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [callbackPending, setCallbackPending] = useState(false);
+  const [callbackError, setCallbackError] = useState<string | null>(null);
+  const [recoverySession, setRecoverySession] = useState(false);
+  const [invitationSession, setInvitationSession] = useState(false);
+  const generation = useRef(0);
+  const mounted = useRef(true);
+  const sessionUserId = useRef<string | null>(null);
+  const applySession = useCallback(async (next: Session | null, version: number) => {
+    if (!mounted.current || version !== generation.current) return;
+    setSession(next);
+    setStaffRole(null);
+    setAal(null);
+    setError(null);
+    if (!next || !supabase) { setLoading(false); return; }
+    setLoading(true);
+    try {
+      const [roleResult, assuranceResult] = await Promise.all([
+        supabase.rpc("get_my_staff_role"),
+        supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+      ]);
+      if (roleResult.error) throw roleResult.error;
+      if (assuranceResult.error) throw assuranceResult.error;
+      if (!mounted.current || version !== generation.current) return;
+      const role = roleResult.data;
+      setStaffRole(role === "owner" || role === "operator" ? role : null);
+      const level = assuranceResult.data.currentLevel;
+      setAal(level === "aal1" ? "aal1" : level === "aal2" ? "aal2" : null);
+    } catch (err) {
+      if (mounted.current && version === generation.current) setError(messageOf(err));
+    } finally {
+      if (mounted.current && version === generation.current) setLoading(false);
+    }
+  }, []);
+
+  const refreshAuth = useCallback(async () => {
+    if (!supabase) return;
+    const version = ++generation.current;
+    setLoading(true);
+    try {
+      const { data, error: sessionError } = await supabase.auth.getSession();
+      if (version !== generation.current || !mounted.current) return;
+      if (sessionError) throw sessionError;
+      await applySession(data.session, version);
+    } catch (err) {
+      if (version === generation.current && mounted.current) {
+        setStaffRole(null); setAal(null); setError(messageOf(err)); setLoading(false);
+      }
+    }
+  }, [applySession]);
+
+  useEffect(() => {
+    mounted.current = true;
+    if (!supabase) return () => { mounted.current = false; };
+    const client = supabase;
+    const { data: { subscription } } = client.auth.onAuthStateChange((event, next) => {
+      const version = ++generation.current;
+      if (sessionUserId.current !== (next?.user.id ?? null)) {
+        setRecoverySession(false); setInvitationSession(false);
+      }
+      sessionUserId.current = next?.user.id ?? null;
+      if (event === "PASSWORD_RECOVERY") { callbackRecoveryObserved = true; setRecoverySession(true); }
+      if (event === "SIGNED_OUT") { setRecoverySession(false); setInvitationSession(false); }
+      // Clear old account permissions immediately, before asynchronous RPC results.
+      setSession(next);
+      setStaffRole(null);
+      setAal(null);
+      setLoading(Boolean(next));
+      // Do not await other auth calls inside the auth event callback (client lock).
+      window.setTimeout(() => { void applySession(next, version); }, 0);
+    });
+    const callback = exchangeCallback();
+    if (callback) {
+      setCallbackPending(true);
+      callback.then(result => {
+        if (!mounted.current) return;
+        if (result.recovery) { setRecoverySession(true); window.location.hash = "reset-password"; }
+        else if (result.invitation) { setInvitationSession(true); window.location.hash = "set-password"; }
+        else { setRecoverySession(false); setInvitationSession(false); window.location.hash = "dashboard"; }
+      }).catch(err => {
+        if (mounted.current) setCallbackError(messageOf(err));
+      }).finally(() => {
+        if (mounted.current) { setCallbackPending(false); void refreshAuth(); }
+      });
+    } else void refreshAuth();
+    return () => {
+      mounted.current = false;
+      ++generation.current;
+      subscription.unsubscribe();
+    };
+  }, [applySession, refreshAuth]);
+
+  const signOut = useCallback(async () => {
+    if (!supabase) return;
+    const { error: signOutError } = await supabase.auth.signOut({ scope: "local" });
+    if (signOutError) { setError(signOutError.message); throw signOutError; }
+    ++generation.current;
+    setSession(null); setStaffRole(null); setAal(null); setError(null);
+    setRecoverySession(false); setInvitationSession(false); setLoading(false);
+  }, []);
+  return <AuthContext.Provider value={{ user: session?.user ?? null, session, loading, staffRole, aal, error,
+    callbackPending, callbackError, recoverySession, invitationSession, signOut, refreshAuth,
+    clearRecovery: () => { setRecoverySession(false); setInvitationSession(false); },
+  }}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) throw new Error("useAuth must be used inside AuthProvider");
+  return context;
+}
+
+const copy = {
+  fr: {
+    eyebrow: "VOTRE ESPACE MAISONÀVENDRE", title: "Votre projet,\nà votre rythme.",
+    intro: "Un seul compte pour préparer votre vente, retrouver vos documents et choisir l’aide dont vous avez besoin.",
+    benefit1: "Vos projets sauvegardés", benefit2: "Des services à la carte", benefit3: "Un accès personnel sécurisé",
+    login: "Retrouver mon espace", register: "Créer mon compte", forgot: "Mot de passe oublié", reset: "Choisir un nouveau mot de passe", invite: "Activer votre accès",
+    loginText: "Connectez-vous pour poursuivre votre projet.", registerText: "Commencez gratuitement. Choisissez vos services plus tard.", forgotText: "Nous vous enverrons un lien pour choisir un nouveau mot de passe.", resetText: "Choisissez un mot de passe d’au moins 12 caractères.",
+    email: "Adresse courriel", password: "Mot de passe", confirm: "Confirmer le mot de passe", passwordHint: "Au moins 12 caractères", submit: "Se connecter", create: "Créer mon compte", send: "Envoyer le lien", save: "Enregistrer le mot de passe", busy: "Un instant…",
+    noAccount: "Vous commencez votre projet ?", already: "Vous avez déjà un compte ?", back: "Revenir à la connexion", home: "Retour à l’accueil",
+    verify: "Vérifiez votre boîte courriel pour confirmer votre adresse, puis connectez-vous. Ouvrez le lien dans ce navigateur.",
+    sent: "Si cette adresse est associée à un compte, vous recevrez un lien de réinitialisation. Ouvrez-le dans ce navigateur.", saved: "Votre mot de passe a été enregistré.", mismatch: "Les mots de passe ne correspondent pas.",
+    unavailable: "L’espace sécurisé sera bientôt disponible.", unavailableText: "Le service de connexion n’est pas encore configuré. Aucun compte ne peut être créé pour le moment.",
+    callback: "Vérification de votre lien…", invalid: "Ce lien n’est pas valide ou a expiré. Demandez un nouveau lien.", retry: "Réessayer", issue: "La demande n’a pas pu être traitée.",
+    privacy: "Votre compte est personnel. Aucune souscription payante n’est requise pour le créer.",
+    mfaTitle: "Protégez votre accès administrateur", mfaText: "La double authentification est obligatoire pour accéder à l’administration.",
+    mfaSetup: "Activer la double authentification", mfaScan: "Scannez ce QR code avec votre application d’authentification, puis saisissez son code à 6 chiffres.",
+    mfaCode: "Code à 6 chiffres", mfaVerify: "Vérifier et continuer", mfaExisting: "Saisissez le code de votre application d’authentification.", mfaSecret: "Clé de configuration manuelle", mfaComplete: "Votre accès est vérifié.", needLogin: "Connectez-vous pour continuer.",
+  },
+  en: {
+    eyebrow: "YOUR MAISONÀVENDRE SPACE", title: "Your project,\nat your own pace.",
+    intro: "One account to prepare your sale, keep your documents together and choose the help you need.",
+    benefit1: "Your projects, saved", benefit2: "Services when you need them", benefit3: "Secure, personal access",
+    login: "Welcome back", register: "Create your account", forgot: "Forgot your password?", reset: "Choose a new password", invite: "Activate your access",
+    loginText: "Sign in to pick up where you left off.", registerText: "Start for free. Choose your services later.", forgotText: "We’ll email you a link to choose a new password.", resetText: "Choose a password with at least 12 characters.",
+    email: "Email address", password: "Password", confirm: "Confirm password", passwordHint: "At least 12 characters", submit: "Sign in", create: "Create account", send: "Send reset link", save: "Save password", busy: "One moment…",
+    noAccount: "Starting your project?", already: "Already have an account?", back: "Back to sign in", home: "Back to home",
+    verify: "Check your email to confirm your address, then sign in. Open the confirmation link in this browser.", sent: "If this email belongs to an account, you’ll receive a reset link. Open it in this browser.", saved: "Your password has been saved.", mismatch: "The passwords do not match.",
+    unavailable: "Your secure space is coming soon.", unavailableText: "Sign-in has not been configured yet. Accounts cannot be created at this time.",
+    callback: "Verifying your link…", invalid: "This link is invalid or has expired. Please request a new link.", retry: "Try again", issue: "We couldn’t complete your request.",
+    privacy: "Your account is personal. Creating one does not require a paid subscription.",
+    mfaTitle: "Protect your administrator access", mfaText: "Two-factor authentication is required to access administration.", mfaSetup: "Enable two-factor authentication", mfaScan: "Scan this QR code with your authenticator app, then enter its 6-digit code.", mfaCode: "6-digit code", mfaVerify: "Verify and continue", mfaExisting: "Enter the code from your authenticator app.", mfaSecret: "Manual setup key", mfaComplete: "Your access is verified.", needLogin: "Sign in to continue.",
+  },
+  zh: {
+    eyebrow: "MAISONÀVENDRE · 您的专属空间", title: "您的卖房计划，\n由您掌握节奏。",
+    intro: "一个账号，保存房屋资料、管理卖房进度，在需要时选择专业帮助。",
+    benefit1: "项目资料持续保存", benefit2: "按需选择专业服务", benefit3: "独立且安全的个人空间",
+    login: "欢迎回来", register: "创建您的账号", forgot: "找回密码", reset: "设置新密码", invite: "激活您的访问权限",
+    loginText: "登录账号，继续您的卖房计划。", registerText: "免费开始准备，需要帮助时再选择服务。", forgotText: "输入注册邮箱，我们会向您发送密码重置链接。", resetText: "请设置至少 12 个字符的新密码。",
+    email: "邮箱地址", password: "密码", confirm: "确认密码", passwordHint: "至少 12 个字符", submit: "登录工作室", create: "创建账号", send: "发送重置链接", save: "保存新密码", busy: "正在处理…",
+    noAccount: "第一次开始卖房计划？", already: "已经有账号？", back: "返回登录", home: "返回首页",
+    verify: "请查看邮箱并验证邮箱地址，再登录您的账号。请使用当前浏览器打开验证链接。", sent: "如果此邮箱已注册，您将收到密码重置链接。请使用当前浏览器打开链接。", saved: "您的密码已保存。", mismatch: "两次输入的密码不一致。",
+    unavailable: "安全账号功能即将开放。", unavailableText: "登录服务尚未完成配置，目前暂时无法创建账号。",
+    callback: "正在验证您的链接…", invalid: "此链接无效或已过期，请重新申请链接。", retry: "重试", issue: "请求未能完成。",
+    privacy: "账号仅供本人使用。创建账号无需购买套餐。",
+    mfaTitle: "保护您的管理员账号", mfaText: "进入管理后台前，需要完成双重验证。", mfaSetup: "启用双重验证", mfaScan: "使用身份验证器应用扫描此二维码，然后输入应用中的 6 位验证码。", mfaCode: "6 位验证码", mfaVerify: "验证并继续", mfaExisting: "请输入身份验证器应用中的验证码。", mfaSecret: "手动设置密钥", mfaComplete: "您的访问身份已验证。", needLogin: "请先登录账号。",
+  },
+};
+
+function useHash() {
+  const [hash, setHash] = useState(window.location.hash);
+  useEffect(() => {
+    const listener = () => setHash(window.location.hash);
+    window.addEventListener("hashchange", listener);
+    return () => window.removeEventListener("hashchange", listener);
+  }, []);
+  return hash;
+}
+
+export function AuthPage({ lang }: { lang: Language }) {
+  const c = copy[lang];
+  const auth = useAuth();
+  const hash = useHash();
+  const mode = hash.startsWith("#register") ? "register" : hash.startsWith("#forgot-password") ? "forgot" : hash.startsWith("#reset-password") ? "reset" : hash.startsWith("#set-password") ? "invite" : hash.startsWith("#auth/callback") ? "callback" : "login";
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  useEffect(() => { setError(""); setNotice(""); setPassword(""); setConfirm(""); }, [mode]);
+  const passwordMode = mode === "reset" || mode === "invite";
+  const canSetPassword = Boolean(auth.user && (mode === "reset" ? auth.recoverySession : auth.invitationSession));
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!supabase || busy) return;
+    setError(""); setNotice("");
+    if ((mode === "register" || passwordMode) && password !== confirm) { setError(c.mismatch); return; }
+    setBusy(true);
+    try {
+      if (mode === "login") {
+        auth.clearRecovery();
+        const { error: resultError } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        if (resultError) throw resultError;
+        window.location.hash = "dashboard";
+      } else if (mode === "register") {
+        auth.clearRecovery();
+        const { data, error: resultError } = await supabase.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: authCallbackUrl(), data: { preferred_language: lang } } });
+        if (resultError) throw resultError;
+        if (data.session) window.location.hash = "dashboard";
+        else { setNotice(c.verify); setPassword(""); setConfirm(""); }
+      } else if (mode === "forgot") {
+        const { error: resultError } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: authCallbackUrl() });
+        if (resultError) throw resultError;
+        setNotice(c.sent);
+      } else if (passwordMode) {
+        if (!canSetPassword) throw new Error(c.invalid);
+        const { error: resultError } = await supabase.auth.updateUser({ password });
+        if (resultError) throw resultError;
+        auth.clearRecovery(); setPassword(""); setConfirm("");
+        window.location.hash = "dashboard";
+      }
+    } catch (err) { setError(messageOf(err)); }
+    finally { setBusy(false); }
+  };
+  return <main className="auth-page">
+    <section className="auth-story">
+      <span className="auth-eyebrow">{c.eyebrow}</span>
+      <h1>{c.title.split("\n").map((line, index) => <span key={index}>{line}</span>)}</h1>
+      <p>{c.intro}</p>
+      <ul>{[c.benefit1, c.benefit2, c.benefit3].map(text => <li key={text}><CheckCircle2 size={19} />{text}</li>)}</ul>
+      <div className="auth-story-mark"><House size={35} /><span>La technologie pour avancer.<br />Un humain pour décider.</span></div>
+    </section>
+    <section className="auth-card" aria-labelledby="auth-title">
+      <div className="auth-symbol"><LockKeyhole size={25} /></div>
+      <h2 id="auth-title">{mode === "callback" ? c.callback : c[mode]}</h2>
+      {!backendConfigured ? <div className="auth-notice"><strong>{c.unavailable}</strong><p>{c.unavailableText}</p></div>
+      : mode === "callback" ? <div role={auth.callbackError ? "alert" : "status"} className={auth.callbackError ? "auth-error" : "auth-notice"}>
+          {auth.callbackError || (auth.callbackPending || auth.loading ? c.callback : c.invalid)}
+          {auth.callbackError && <a href="#forgot-password">{c.forgot}</a>}
+        </div>
+      : passwordMode && !canSetPassword ? <div className="auth-notice" role="status">{auth.loading ? c.callback : c.invalid}<a href="#forgot-password">{c.forgot}</a></div>
+      : <>
+        <p className="auth-subtitle">{mode === "register" ? c.registerText : mode === "forgot" ? c.forgotText : passwordMode ? c.resetText : c.loginText}</p>
+        <form onSubmit={submit} className="auth-form">
+          {!passwordMode && <label>{c.email}<span className="auth-input-wrap"><Mail size={18} /><input type="email" name="email" autoComplete="email" required maxLength={254} value={email} onChange={event => setEmail(event.target.value)} disabled={busy} /></span></label>}
+          {mode !== "forgot" && <label>{c.password}<input type="password" name="password" autoComplete={mode === "login" ? "current-password" : "new-password"} required minLength={mode === "login" ? 1 : 12} maxLength={128} value={password} onChange={event => setPassword(event.target.value)} disabled={busy} />{mode !== "login" && <small>{c.passwordHint}</small>}</label>}
+          {(mode === "register" || passwordMode) && <label>{c.confirm}<input type="password" name="password-confirm" autoComplete="new-password" required minLength={12} maxLength={128} value={confirm} onChange={event => setConfirm(event.target.value)} disabled={busy} /></label>}
+          {mode === "login" && <a className="auth-forgot" href="#forgot-password">{c.forgot}</a>}
+          {(error || auth.error) && <div className="auth-error" role="alert">{error || auth.error}</div>}
+          {notice && <div className="auth-notice" role="status">{notice}</div>}
+          <button className="auth-primary" type="submit" disabled={busy}>{busy ? c.busy : mode === "register" ? c.create : mode === "forgot" ? c.send : passwordMode ? c.save : c.submit}<ArrowRight size={18} /></button>
+        </form>
+        {(mode === "login" || mode === "register") && <p className="auth-switch">{mode === "login" ? c.noAccount : c.already} <a href={mode === "login" ? "#register" : "#login"}>{mode === "login" ? c.register : c.submit}</a></p>}
+        {(mode === "forgot" || passwordMode) && <a className="auth-back" href="#login">{c.back}</a>}
+        <p className="auth-privacy"><ShieldCheck size={16} />{c.privacy}</p>
+      </>}
+      <a className="auth-home" href="#top">{c.home}</a>
+    </section>
+  </main>;
+}
+
+export function MfaPanel({ lang, onVerified }: { lang: Language; onVerified?: () => void }) {
+  const c = copy[lang];
+  const auth = useAuth();
+  const [factorId, setFactorId] = useState("");
+  const [qr, setQr] = useState("");
+  const [secret, setSecret] = useState("");
+  const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [retry, setRetry] = useState(0);
+  const currentUserId = useRef(auth.user?.id);
+  currentUserId.current = auth.user?.id;
+  useEffect(() => {
+    let active = true;
+    setFactorId(""); setQr(""); setSecret(""); setCode(""); setError(""); setBusy(false);
+    if (!supabase || !auth.user) { setLoading(false); return; }
+    setLoading(true);
+    supabase.auth.mfa.listFactors().then(({ data, error: resultError }) => {
+      if (!active) return;
+      if (resultError) setError(resultError.message);
+      else setFactorId(data.totp.find(factor => factor.status === "verified")?.id || "");
+    }).catch(err => { if (active) setError(messageOf(err)); }).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [auth.user?.id, retry]);
+
+  const enroll = async () => {
+    if (!supabase || busy) return;
+    const requestUserId = currentUserId.current;
+    setBusy(true); setError("");
+    try {
+      // Check again in case a second tab just finished enrolling this account.
+      const { data: factors, error: factorError } = await supabase.auth.mfa.listFactors();
+      if (requestUserId !== currentUserId.current) return;
+      if (factorError) throw factorError;
+      const verified = factors.totp.find(factor => factor.status === "verified");
+      if (verified) { setFactorId(verified.id); return; }
+      for (const factor of factors.all.filter(item => item.status === "unverified" && item.factor_type === "totp" && item.friendly_name === "MaisonÀVendre administration")) {
+        const { error: removeError } = await supabase.auth.mfa.unenroll({ factorId: factor.id });
+        if (requestUserId !== currentUserId.current) return;
+        if (removeError) throw removeError;
+      }
+      const { data, error: enrollError } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "MaisonÀVendre administration" });
+      if (requestUserId !== currentUserId.current) return;
+      if (enrollError) throw enrollError;
+      setFactorId(data.id);
+      setQr(data.totp.qr_code.startsWith("data:image/") ? data.totp.qr_code : "");
+      setSecret(data.totp.secret);
+    } catch (err) { if (requestUserId === currentUserId.current) setError(messageOf(err)); }
+    finally { if (requestUserId === currentUserId.current) setBusy(false); }
+  };
+  const verify = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!supabase || !factorId || busy) return;
+    const requestUserId = currentUserId.current;
+    setBusy(true); setError("");
+    try {
+      const { error: verifyError } = await supabase.auth.mfa.challengeAndVerify({ factorId, code });
+      if (requestUserId !== currentUserId.current) return;
+      if (verifyError) throw verifyError;
+      setQr(""); setSecret(""); setCode("");
+      await auth.refreshAuth();
+      onVerified?.();
+    } catch (err) { if (requestUserId === currentUserId.current) setError(messageOf(err)); }
+    finally { if (requestUserId === currentUserId.current) setBusy(false); }
+  };
+  return <section className="auth-card mfa-card" aria-labelledby="mfa-title">
+    <div className="auth-symbol"><ShieldCheck size={26} /></div>
+    <h2 id="mfa-title">{c.mfaTitle}</h2><p className="auth-subtitle">{c.mfaText}</p>
+    {!backendConfigured ? <div className="auth-notice">{c.unavailableText}</div>
+    : !auth.user ? <a href="#login">{c.needLogin}</a>
+    : auth.aal === "aal2" ? <div className="auth-notice" role="status">{c.mfaComplete}</div>
+    : loading ? <p role="status">{c.busy}</p>
+    : <>
+      {error && <div className="auth-error" role="alert">{error}</div>}
+      {factorId ? <form onSubmit={verify} className="auth-form">
+        <p>{secret ? c.mfaScan : c.mfaExisting}</p>
+        {qr && <img className="mfa-qr" src={qr} alt={c.mfaSetup} />}
+        {secret && <details className="mfa-secret"><summary>{c.mfaSecret}</summary><code>{secret}</code></details>}
+        <label>{c.mfaCode}<input name="totp" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" minLength={6} maxLength={6} required value={code} onChange={event => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} disabled={busy} /></label>
+        <button type="submit" className="auth-primary" disabled={busy}>{busy ? c.busy : c.mfaVerify}<ArrowRight size={18} /></button>
+      </form> : <button className="auth-primary" type="button" disabled={busy} onClick={() => { void enroll(); }}>{busy ? c.busy : c.mfaSetup}</button>}
+      {error && !factorId && <button className="auth-text-button" type="button" onClick={() => setRetry(value => value + 1)}>{c.retry}</button>}
+    </>}
+  </section>;
+}

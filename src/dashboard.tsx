@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { useProject, type Plan } from "./project";
 import { sellerCopy, type Language } from "./seller-copy";
+import { ProjectStatus } from "./project-status";
 
 type Section =
   | "overview"
@@ -153,13 +154,17 @@ export function Dashboard({ lang }: { lang: Language }) {
     setServices,
     completed,
     sample,
-    setSample,
     buyers,
     setBuyers,
     visits,
     setVisits,
     docs,
-    setDocs,
+    addFiles,
+    deleteFile,
+    downloadDocument,
+    isDemo,
+    busy,
+    project,
   } = useProject();
   const sectionFromHash = (): Section => {
     const value = location.hash.split("/")[1];
@@ -171,7 +176,6 @@ export function Dashboard({ lang }: { lang: Language }) {
   const [period, setPeriod] = useState("14");
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
-  const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [pendingPlan, setPendingPlan] = useState<Plan | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -189,8 +193,16 @@ export function Dashboard({ lang }: { lang: Language }) {
     if (pendingPlan) dialogRef.current?.showModal();
   }, [pendingPlan]);
   const go = (next: Section) => {
-    location.hash = next === "overview" ? "dashboard" : `dashboard/${next}`;
+    const base = isDemo ? "demo" : "dashboard";
+    location.hash = next === "overview" ? base : `${base}/${next}`;
   };
+  const editLink = isDemo ? "#register" : "#vendre/edit";
+  const reviewLabel = {
+    draft: t("Brouillon privé", "Private draft", "私有草稿"),
+    submitted: t("À vérifier", "Awaiting review", "待审核"),
+    approved: t("Dossier vérifié", "Review approved", "审核通过"),
+    changes_requested: t("À modifier", "Changes requested", "待修改"),
+  }[project?.status ?? "draft"];
   const names = navCopy[lang];
   const address = sample
     ? t("Votre maison à Montréal", "Your Montréal home", "您的蒙特利尔房屋")
@@ -243,11 +255,11 @@ export function Dashboard({ lang }: { lang: Language }) {
     { date: "2026-10-04", time: "14:00", name: "Alex M." },
   ];
   const visibleVisits = sample ? sampleVisits : visits;
-  const localNote = t(
+  const localNote = isDemo ? t(
     "Démo interactive · Données réinitialisées au rechargement. Aucun envoi ni paiement.",
     "Interactive demo · Data resets on refresh. No submissions or payments.",
     "交互演示 · 刷新页面后数据清空，不会发送资料或产生付款。",
-  );
+  ) : t("Votre espace privé · Informations et fichiers enregistrés dans votre compte.", "Your private workspace · Information and files saved to your account.", "您的私有工作台 · 资料和文件保存到您的账号。");
   const formatDate = (date: string) =>
     new Intl.DateTimeFormat(lang === "zh" ? "zh-CN" : `${lang}-CA`, {
       day: "numeric",
@@ -272,7 +284,7 @@ export function Dashboard({ lang }: { lang: Language }) {
             return (
               <a
                 key={key}
-                href={key === "overview" ? "#dashboard" : `#dashboard/${key}`}
+                href={`#${isDemo ? "demo" : "dashboard"}${key === "overview" ? "" : `/${key}`}`}
                 className={section === key ? "active" : ""}
                 aria-current={section === key ? "page" : undefined}
               >
@@ -350,7 +362,7 @@ export function Dashboard({ lang }: { lang: Language }) {
               )}
             </p>
           </div>
-          <a className="workspace-primary" href="#vendre/edit">
+          <a className="workspace-primary" href={editLink}>
             <Plus />
             {completed
               ? t("Modifier mon dossier", "Edit my project", "编辑房屋资料")
@@ -360,19 +372,13 @@ export function Dashboard({ lang }: { lang: Language }) {
         <div className="workspace-demo">
           <Info />
           <span>{localNote}</span>
-          <button
-            className="text-button"
-            onClick={() => {
-              setSample(!sample);
-              setFilter("all");
-              setQuery("");
-            }}
-          >
-            {sample
-              ? t("Voir mon dossier", "View my project", "查看我的项目")
+          <a className="text-button" href={isDemo ? "#dashboard" : "#demo"} target={isDemo ? undefined : "_blank"} rel="noopener">
+            {isDemo
+              ? t("Ouvrir mon espace", "Open my workspace", "进入我的工作台")
               : t("Voir un exemple", "See an example", "查看示例项目")}
-          </button>
+          </a>
         </div>
+        <ProjectStatus lang={lang} review />
         {sample && (
           <p className="sample-label">
             {t(
@@ -455,7 +461,7 @@ export function Dashboard({ lang }: { lang: Language }) {
                 <section className="dashboard-card property-overview">
                   <div className="property-image">
                     <img src={hero} alt={address} />
-                    <span>{t("Brouillon", "Draft", "草稿")}</span>
+                    <span>{reviewLabel}</span>
                     {!displayedPhotos.length && (
                       <small>
                         {t(
@@ -713,11 +719,11 @@ export function Dashboard({ lang }: { lang: Language }) {
               {displayedPhotos.length > 0 && (
                 <div className="dashboard-photos">
                   {displayedPhotos.map((p) => (
-                    <img key={p.url} src={p.url} alt={p.file.name} />
+                    <img key={p.id} src={p.url} alt={p.name} />
                   ))}
                 </div>
               )}
-              <a className="workspace-primary" href="#vendre/edit">
+              <a className="workspace-primary" href={editLink}>
                 {t(
                   "Modifier les informations",
                   "Edit information",
@@ -769,9 +775,9 @@ export function Dashboard({ lang }: { lang: Language }) {
               </ul>
               <p className="empty-copy">
                 {t(
-                  "Votre brouillon reste privé dans cette démonstration. Aucune annonce n’est publiée.",
-                  "Your draft stays private in this demo. No listing is published.",
-                  "本演示中的草稿不会对外发布。",
+                  "Votre dossier reste privé. La vérification ne publie aucune annonce.",
+                  "Your project stays private. Review does not publish a listing.",
+                  "您的项目保持私有，资料审核不会自动发布房源。",
                 )}
               </p>
             </section>
@@ -900,8 +906,8 @@ export function Dashboard({ lang }: { lang: Language }) {
                 </p>
               </div>
               <button
+                disabled={isDemo || busy}
                 onClick={() => {
-                  setSample(false);
                   setShowVisitForm(!showVisitForm);
                 }}
               >
@@ -926,9 +932,9 @@ export function Dashboard({ lang }: { lang: Language }) {
                   setShowVisitForm(false);
                   setMessage(
                     t(
-                      "Note ajoutée dans cette session. Aucune invitation envoyée.",
-                      "Added to this session. No invitation sent.",
-                      "已添加本次会话记录，没有发送任何邀请。",
+                      "Note ajoutée. Consultez l’état d’enregistrement ci-dessus. Aucune invitation envoyée.",
+                      "Note added. Check saving status above. No invitation sent.",
+                      "已添加安排，保存状态见上方。没有发送任何邀请。",
                     ),
                   );
                 }}
@@ -1080,9 +1086,9 @@ export function Dashboard({ lang }: { lang: Language }) {
                 </h2>
                 <p>
                   {t(
-                    "Aperçus locaux uniquement · PDF et images · 10 Mo maximum.",
-                    "Local previews only · PDF and images · up to 10 MB.",
-                    "仅在本机预览 · PDF 或图片 · 最大 10 MB。",
+                    "Documents privés · PDF et images · 10 fichiers, 10 Mo maximum chacun.",
+                    "Private documents · PDF and images · 10 files, up to 10 MB each.",
+                    "私有文件 · PDF 或图片 · 最多 10 个，每个最大 10 MB。",
                   )}
                 </p>
               </div>
@@ -1094,74 +1100,42 @@ export function Dashboard({ lang }: { lang: Language }) {
               </strong>
               <input
                 type="file"
+                disabled={isDemo || busy}
                 accept="application/pdf,image/jpeg,image/png,image/webp"
                 aria-label={t(
                   "Ajouter un document",
                   "Add a document",
                   "添加文件",
                 )}
-                onChange={(e) => {
+                onChange={async (e) => {
                   const file = e.target.files?.[0];
-                  if (!file) return;
-                  if (
-                    docs.length >= 10 ||
-                    file.size > 10 * 1024 * 1024 ||
-                    ![
-                      "application/pdf",
-                      "image/jpeg",
-                      "image/png",
-                      "image/webp",
-                    ].includes(file.type)
-                  ) {
-                    setError(
-                      t(
-                        "Maximum 10 fichiers PDF ou image, 10 Mo chacun.",
-                        "Up to 10 PDF or image files, 10 MB each.",
-                        "最多 10 个 PDF 或图片，每个不超过 10 MB。",
-                      ),
-                    );
-                  } else {
-                    setDocs((old) => [
-                      ...old,
-                      {
-                        name: file.name,
-                        size: file.size,
-                        url: URL.createObjectURL(file),
-                      },
-                    ]);
-                    setError("");
-                  }
                   e.target.value = "";
+                  if (!file) return;
+                  await addFiles([file], "document");
                 }}
               />
             </label>
-            {error && (
-              <p role="alert" className="error-message">
-                {error}
-              </p>
-            )}
             {docs.length ? (
               docs.map((doc) => (
-                <div className="document-row" key={doc.url}>
+                <div className="document-row" key={doc.id}>
                   <FileText />
                   <div>
                     <strong>{doc.name}</strong>
                     <small>{Math.ceil(doc.size / 1024)} KB</small>
                   </div>
-                  <a
-                    href={doc.url}
-                    download={doc.name}
+                  <button
+                    className="icon-button"
+                    disabled={busy}
+                    onClick={() => void downloadDocument(doc)}
                     aria-label={`${t("Télécharger", "Download", "下载")} ${doc.name}`}
                   >
                     <Download />
-                  </a>
+                  </button>
                   <button
                     className="icon-button"
+                    disabled={busy}
                     aria-label={`${t("Retirer", "Remove", "移除")} ${doc.name}`}
-                    onClick={() => {
-                      URL.revokeObjectURL(doc.url);
-                      setDocs((old) => old.filter((d) => d.url !== doc.url));
-                    }}
+                    onClick={() => void deleteFile(doc)}
                   >
                     <X />
                   </button>
@@ -1269,9 +1243,9 @@ export function Dashboard({ lang }: { lang: Language }) {
               )}
               <p className="empty-copy">
                 {t(
-                  "Aucun achat ni paiement dans cette démonstration.",
-                  "No purchases or payments in this demo.",
-                  "此演示不会产生订单或付款。",
+                  "Votre sélection exprime un intérêt. Aucun achat ni paiement n’est effectué.",
+                  "Your selection records interest. No order or payment is made.",
+                  "选择仅代表服务意向，不会产生订单或付款。",
                 )}
               </p>
             </section>
@@ -1393,9 +1367,9 @@ export function Dashboard({ lang }: { lang: Language }) {
           </h2>
           <p>
             {t(
-              "Votre dossier et votre sélection de services seront conservés. Il s’agit uniquement d’une préférence dans cette démonstration.",
-              "Your project and selected services will be kept. This is only a preference in the demo.",
-              "房屋资料和已选服务都会保留。本次操作只记录演示中的服务意向。",
+              "Votre dossier et votre sélection de services seront conservés. Ce choix indique votre préférence d’accompagnement.",
+              "Your project and selected services will be kept. This choice records your support preference.",
+              "房屋资料和已选服务都会保留。本次操作记录您的服务意向。",
             )}
           </p>
           <div>

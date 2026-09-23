@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { sellerCopy, type Language } from "./seller-copy";
 import { useProject, type Details, type Plan } from "./project";
+import { ProjectStatus } from "./project-status";
 
 const dateToday = () => {
   const now = new Date();
@@ -39,11 +40,20 @@ export function SellerFlow({ lang }: { lang: Language }) {
     form,
     setForm,
     photos,
-    setPhotos,
-    setCompleted,
+    addFiles,
+    deleteFile,
+    completeProject,
     setSample,
+    busy,
+    loading,
+    isDemo,
+    project,
+    error,
   } = useProject();
   const [photoError, setPhotoError] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
+  const [finishing, setFinishing] = useState(false);
+  const locked = loading || busy || finishing || (!isDemo && !project);
   const headingRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     headingRef.current?.focus();
@@ -52,11 +62,13 @@ export function SellerFlow({ lang }: { lang: Language }) {
   const update = (key: keyof Details, value: string | boolean) =>
     setForm((p) => ({ ...p, [key]: value }));
   const choose = (value: Plan) => {
+    if (locked) return;
     setPlan(value);
     setStep(1);
   };
   const next = (event: FormEvent) => {
     event.preventDefault();
+    if (locked) return;
     setStep((s) => s + 1);
   };
   const input = (
@@ -75,17 +87,19 @@ export function SellerFlow({ lang }: { lang: Language }) {
         name={key}
         type={type}
         required={required}
+        disabled={locked}
         value={String(form[key])}
         onChange={(e) => update(key, e.target.value)}
         {...extra}
       />
     </label>
   );
-  const select = (key: keyof Details, label: string, options: string[]) => (
+  const select = (key: keyof Details, label: string, options: string[], required = true) => (
     <label className="field">
-      <span>{label} *</span>
+      <span>{label}{required ? " *" : ""}</span>
       <select
         name={key}
+        disabled={locked || (key === "time" && !form.date)}
         value={String(form[key])}
         onChange={(e) => update(key, e.target.value)}
       >
@@ -108,18 +122,19 @@ export function SellerFlow({ lang }: { lang: Language }) {
     ? new Intl.DateTimeFormat(lang === "zh" ? "zh-CN" : `${lang}-CA`, {
         dateStyle: "long",
       }).format(new Date(`${form.date}T12:00:00`))
-    : "";
+    : d.noAppointment;
   const actions = (label = d.next) => (
     <div className="flow-actions">
       <button
         className="outline"
         type="button"
+        disabled={locked}
         onClick={() => setStep((s) => s - 1)}
       >
         <ArrowLeft />
         {d.previous}
       </button>
-      <button type="submit">
+      <button type="submit" disabled={locked}>
         {label}
         <ArrowRight />
       </button>
@@ -154,8 +169,9 @@ export function SellerFlow({ lang }: { lang: Language }) {
         </ol>
         <p className="demo-banner">
           <Info aria-hidden="true" />
-          {d.demo}
+          {isDemo ? d.demo : d.saveNotice}
         </p>
+        <ProjectStatus lang={lang} />
         {step === 0 && (
           <>
             <div className="plan-grid">
@@ -180,7 +196,7 @@ export function SellerFlow({ lang }: { lang: Language }) {
                   <strong>{d.agreed}</strong>
                   <p>{d.agreedNote}</p>
                 </div>
-                <button onClick={() => choose("with")}>
+                <button disabled={locked} onClick={() => choose("with")}>
                   {d.chooseWith}
                   <ArrowRight />
                 </button>
@@ -209,7 +225,7 @@ export function SellerFlow({ lang }: { lang: Language }) {
                   <div className="price-pending">{price}</div>
                   <p>{d.fixed}</p>
                 </div>
-                <button onClick={() => choose("without")}>
+                <button disabled={locked} onClick={() => choose("without")}>
                   {d.chooseWithout}
                   <ArrowRight />
                 </button>
@@ -290,11 +306,14 @@ export function SellerFlow({ lang }: { lang: Language }) {
                     <input
                       id="property-photos"
                       type="file"
+                      disabled={locked || isDemo}
                       accept="image/jpeg,image/png,image/webp"
                       multiple
                       aria-describedby="photo-help"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const files = Array.from(e.target.files ?? []);
+                        e.target.value = "";
+                        if (!files.length || locked || isDemo) return;
                         const valid =
                           photos.length + files.length <= 8 &&
                           files.every(
@@ -303,18 +322,13 @@ export function SellerFlow({ lang }: { lang: Language }) {
                                 "image/jpeg",
                                 "image/png",
                                 "image/webp",
-                              ].includes(f.type) && f.size <= 10 * 1024 * 1024,
+                              ].includes(f.type) && f.size > 0 && f.size <= 10 * 1024 * 1024 && f.name.length <= 255,
                           );
                         setPhotoError(!valid);
-                        if (valid)
-                          setPhotos((p) => [
-                            ...p,
-                            ...files.map((file) => ({
-                              file,
-                              url: URL.createObjectURL(file),
-                            })),
-                          ]);
-                        e.target.value = "";
+                        if (valid) {
+                          setPreviewError(false);
+                          await addFiles(files, "photo");
+                        }
                       }}
                     />
                     <p id="photo-help" className="sr-only">
@@ -326,27 +340,30 @@ export function SellerFlow({ lang }: { lang: Language }) {
                       {d.photoError}
                     </p>
                   )}
+                  {previewError && <p className="error-message" role="alert">{d.photoPreviewError}</p>}
                   {photos.length > 0 && (
                     <div className="photo-grid">
-                      {photos.map((photo, i) => (
-                        <figure key={photo.url}>
+                      {photos.map((photo) => (
+                        <figure key={photo.id}>
                           <img
                             src={photo.url}
-                            alt={photo.file.name}
-                            onError={() => setPhotoError(true)}
+                            alt={photo.name}
+                            onError={() => setPreviewError(true)}
                           />
                           <button
                             type="button"
-                            aria-label={`${d.remove} ${photo.file.name}`}
-                            onClick={() => {
-                              URL.revokeObjectURL(photo.url);
-                              setPhotos((p) => p.filter((_, n) => n !== i));
-                              setPhotoError(false);
+                            disabled={locked || isDemo}
+                            aria-label={`${d.remove} ${photo.name}`}
+                            onClick={async () => {
+                              if (await deleteFile(photo)) {
+                                setPhotoError(false);
+                                setPreviewError(false);
+                              }
                             }}
                           >
                             <X />
                           </button>
-                          <figcaption>{photo.file.name}</figcaption>
+                          <figcaption>{photo.name}</figcaption>
                         </figure>
                       ))}
                     </div>
@@ -377,6 +394,7 @@ export function SellerFlow({ lang }: { lang: Language }) {
                       <span>{d.language} *</span>
                       <select
                         name="language"
+                        disabled={locked}
                         value={form.language}
                         onChange={(e) => update("language", e.target.value)}
                       >
@@ -385,12 +403,13 @@ export function SellerFlow({ lang }: { lang: Language }) {
                         <option value="zh">中文</option>
                       </select>
                     </label>
-                    {input("date", d.date, "date", true, { min: dateToday() })}
-                    {select("time", d.time, d.times)}
+                    {input("date", d.date, "date", false, { min: dateToday() })}
+                    {select("time", d.time, d.times, false)}
                     <label className="field full-field">
                       <span>{d.notes}</span>
                       <textarea
                         name="notes"
+                        disabled={locked}
                         rows={3}
                         maxLength={2000}
                         value={form.notes}
@@ -402,6 +421,7 @@ export function SellerFlow({ lang }: { lang: Language }) {
                     <input
                       type="checkbox"
                       required
+                      disabled={locked}
                       checked={form.consent}
                       onChange={(e) => update("consent", e.target.checked)}
                     />
@@ -417,6 +437,7 @@ export function SellerFlow({ lang }: { lang: Language }) {
                       title={d.property}
                       edit={d.edit}
                       onEdit={() => setStep(1)}
+                      disabled={locked}
                     >
                       <strong>{form.address}</strong>
                       <p>
@@ -449,6 +470,7 @@ export function SellerFlow({ lang }: { lang: Language }) {
                       title={d.contact}
                       edit={d.edit}
                       onEdit={() => setStep(2)}
+                      disabled={locked}
                     >
                       <strong>{form.name}</strong>
                       <p>{form.email}</p>
@@ -458,9 +480,10 @@ export function SellerFlow({ lang }: { lang: Language }) {
                       title={d.appointment}
                       edit={d.edit}
                       onEdit={() => setStep(2)}
+                      disabled={locked}
                     >
                       <strong>
-                        {appointmentDate} · {d.times[Number(form.time)]}
+                        {appointmentDate}{form.date ? ` · ${d.times[Number(form.time)]}` : ""}
                       </strong>
                       <p>
                         {
@@ -477,15 +500,23 @@ export function SellerFlow({ lang }: { lang: Language }) {
                     {d.noCharge}
                   </p>
                   <div className="flow-actions">
-                    <button className="outline" onClick={() => setStep(2)}>
+                    <button className="outline" disabled={locked} onClick={() => setStep(2)}>
                       <ArrowLeft />
                       {d.previous}
                     </button>
                     <button
-                      onClick={() => {
-                        setCompleted(true);
-                        setSample(false);
-                        location.hash = "dashboard";
+                      disabled={locked || error === "CONFLICT"}
+                      onClick={async () => {
+                        if (locked) return;
+                        setFinishing(true);
+                        try {
+                          if (await completeProject()) {
+                            setSample(false);
+                            location.hash = "dashboard";
+                          }
+                        } finally {
+                          setFinishing(false);
+                        }
                       }}
                     >
                       {
@@ -534,6 +565,7 @@ export function SellerFlow({ lang }: { lang: Language }) {
               <button
                 className="text-button"
                 type="button"
+                disabled={locked}
                 onClick={() => setStep(0)}
               >
                 {d.edit}
@@ -569,18 +601,20 @@ function ReviewBlock({
   title,
   edit,
   onEdit,
+  disabled,
   children,
 }: {
   title: string;
   edit: string;
   onEdit: () => void;
+  disabled: boolean;
   children: ReactNode;
 }) {
   return (
     <section className="review-block">
       <div>
         <h3>{title}</h3>
-        <button type="button" className="text-button" onClick={onEdit}>
+        <button type="button" disabled={disabled} className="text-button" onClick={onEdit}>
           {edit}
         </button>
       </div>

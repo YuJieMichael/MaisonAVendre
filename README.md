@@ -1,19 +1,23 @@
 # MaisonÀVendre
 
-Montréal real estate homepage, trilingual seller journey and seller dashboard built with **React, TypeScript and Vite**. Editable source code, not a screenshot or a compiled-app copy.
+Montréal real estate homepage, trilingual seller workspace and Supabase backend built with **React, TypeScript, PostgreSQL and Supabase Edge Functions (Deno)**. Editable source code, including authentication, private project storage, access rules and a staff review interface.
 
 产品方向：卖家自主推进，再按需要增加摄影、视频、市场分析、咨询或经纪帮助。首阶段服务区域为蒙特利尔，价格待定。
 
+**后端源码已实现，云端仍需配置。** 尚未在此仓库填入真实项目连接信息；组织地址不能代替 Supabase 项目 ID。按照 [后端接入指南](docs/backend-setup.md) 创建项目、应用数据库迁移、配置邮件并连接网页。未配置时，真实账号入口会明确显示暂不可用。
+
 ## 本地运行 / Run locally
 
-Use Node.js 22.12+ or a supported newer LTS release.
+Use Node.js 22.18+ or a supported newer LTS release.
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Open the local address printed by Vite. The seller journey is at `/#vendre`, the dashboard at `/#dashboard`, and project editing at `/#vendre/edit`.
+Open the local address printed by Vite. The seller journey is at `/#vendre`, the private dashboard at `/#dashboard`, and project editing at `/#vendre/edit`. Customers must sign in to use their real workspace. `/#demo` is a separate, clearly labelled example; `/#admin` is the invited staff interface.
+
+For real account functionality, create `.env.local` using `.env.example` and supply only your Supabase project URL and browser-safe publishable key. See the [setup guide](docs/backend-setup.md). Never put a service-role/secret key in a `VITE_` variable. Restart Vite after changing environment settings.
 
 ```sh
 npm run build
@@ -28,41 +32,69 @@ The build checks TypeScript and generates `dist/`. Relative asset paths support 
 - French, English and Chinese switcher; changing language preserves seller inputs.
 - **Avec courtier / With a broker / 有经纪服务**: broker support and fees by mandate.
 - **Sans courtier / Without a broker / 无经纪自售**: professional photography, video, qualified market analysis and listing presentation.
-- Choose service → property details → appointment preference → review → seller dashboard.
+- Register / verify email / sign in / recover password. Staff access additionally requires TOTP MFA.
+- Choose service → property details → contact details and optional availability → save → seller dashboard.
 - Address, city, Canadian postal-code validation, property type, desired price, existing broker and sale timeline.
-- Up to 8 local photo previews with removal; JPG, PNG and WebP, 10 MB per file. Files are not uploaded.
+- Private cloud photo storage with upload/removal; up to 8 JPG, PNG or WebP images, 10 MB per file.
 - Contact details, communication language, preferred date/time, validation and editable review.
 - Seller dashboard: overview, property, buyers, viewings, offers, documents, optional services and support mode.
 - Clearly labelled fictional example data; the user's own unpublished project shows no invented performance figures.
-- Select/remove optional services and switch support preference while preserving entered property details, photos, documents and services within the current session.
-- Local viewing notes, example buyer filtering/status changes and example offer details. No invitations, offers or enquiries are sent.
-- Local document centre: up to 10 PDF/JPG/PNG/WebP files, 10 MB each, with download and removal.
+- Project data, viewing notes, service interests and support preference persist in the signed-in account after a successful cloud save. Auto-save status and explicit conflict handling protect against stale browser tabs.
+- Example buyer filtering/status changes and example offer details remain demo-only. Customer data has no invented enquiries or offers.
+- Private document centre: up to 10 PDF/JPG/PNG/WebP files, 10 MB each, with authorized download and removal.
+- Complete a project and add a photo to request internal review. Invited MFA staff may approve or request changes, with audit records. Approval does not publish private data.
+- Platform owners may invite operators through a protected TypeScript Edge Function; customers cannot assign themselves staff permissions.
 - Responsive layout and keyboard-accessible controls.
 
-## 演示范围 / Demo boundaries
+## 部署状态与范围 / Deployment status and boundaries
 
-**No backend, database, authentication, email delivery, payment processing or confirmed booking is implemented.** Data, photos and documents stay in memory across homepage, seller journey and dashboard navigation. Refreshing or closing the page clears them. Personal data are neither transmitted nor stored in browser storage.
+**Backend source is included; a live Supabase project, migration/function deployment, Auth/SMTP settings and a configured frontend build are still required.** This repository does not establish a production service by itself. Once connected, real customer details and files are transmitted to the private backend and remain there after refreshing. Supabase Auth persists the login session in the browser; signing out clears this device's session.
 
-- All optional service prices show **pricing to be confirmed**. Selection creates a local plan, not an order. Switching support records a preference, not a brokerage mandate.
-- Property search shows an unavailable message. There is no real listings feed, saved search, secure server upload or buyer account yet. The seller dashboard is an interactive frontend demo.
+The separate `/#demo` workspace uses labelled fictional examples. Demo selections are temporary, and real uploads are unavailable there. A demonstration never substitutes for a successful server save.
+
+- All optional service prices show **pricing to be confirmed**. Selection records service interest, not an order. Switching support records a preference, not a brokerage mandate.
+- No payment processing, confirmed booking, public listing publication, real buyer account, enquiry feed or offer-submission system is implemented. Property search remains unavailable.
 - The homepage contact form validates inputs but explicitly says nothing was sent.
 - Brokerage and self-sale presentation services are separate. This UI is not a compliant service agreement.
 - Some homepage marketing was retained from the published site. Before production, verify service claims, broker identity/licence, company information, privacy/terms and personal-data collection notices. Footer legal labels are placeholders, not completed policy pages.
-- Uploading this repository does **not** update the existing `chatgpt.site` website. No hosting or payment account is configured.
+- Uploading this repository does **not** update the existing `chatgpt.site` website. A frontend deployment and its build environment must be configured separately.
+
+## 后端设置与检查 / Backend setup and checks
+
+- [普通用户接入步骤](docs/backend-setup.md): create a Supabase project, apply SQL, configure email, set browser keys and deploy the invite function.
+- [管理员设置](docs/admin-setup.md): bootstrap the verified owner account, enable MFA and invite operators.
+- [数据库契约](supabase/docs/database-contract.md): tables, RPC arguments, storage rules and review transitions.
+
+```sh
+npm run build
+node supabase/tests/run-database.mjs
+node --experimental-strip-types --test supabase/functions/_shared/invitation.test.ts
+npx vitest run tests/auth.test.tsx --configLoader native
+```
+
+Database assertions run against disposable PGlite with mocked Auth/Storage schemas. Auth and invitation tests use simulated dependencies. They do not create cloud accounts or send emails. Real email delivery, Storage upload limits and private downloads, password recovery, staff invitations and backup restoration require a configured staging smoke test. Never run `supabase/tests/bootstrap.sql` against a hosted Supabase project.
 
 ## 文件结构 / Source map
 
 ```text
 src/main.tsx          Homepage, navigation, language state
 src/home-copy.json    Recovered trilingual homepage text
-src/seller-flow.tsx   Seller flow, form validation, photo previews
+src/seller-flow.tsx   Seller flow, form validation, private photo uploads
 src/seller-copy.ts    Trilingual seller-flow text
-src/project.tsx      Shared in-memory project state
+src/auth.tsx         Account screens, sessions, email callback and staff MFA
+src/project.tsx      Serialized cloud saves, media operations and demo separation
+src/project-status.tsx Save/conflict state and review submission
+src/lib/project-api.ts Supabase RPC and private Storage client
+src/admin.tsx        Staff project review, private media and operator invitations
 src/dashboard.tsx    Eight dashboard views and trilingual copy
 src/dashboard.css    Responsive seller workspace styling
 src/original.css      Recovered site-specific homepage styling
 src/styles.css       Shared controls and responsive seller design
 public/              Existing hero image and favicon
+supabase/migrations/ PostgreSQL tables, RPCs, RLS and private storage policy
+supabase/functions/  Server-side TypeScript staff invitation handler
+supabase/tests/      Disposable database integration tests
+docs/                Backend deployment and administrator setup
 ```
 
 ## Recovery provenance

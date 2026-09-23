@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { lazy, Suspense, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   ArrowRight,
@@ -18,13 +18,17 @@ import {
   X,
 } from "lucide-react";
 import homeCopy from "./home-copy.json";
-import { SellerFlow } from "./seller-flow";
-import { Dashboard } from "./dashboard";
-import { ProjectProvider } from "./project";
+import { ProjectProvider, useProject } from "./project";
+import { AuthProvider, AuthPage, useAuth } from "./auth";
+import { ProjectStatus } from "./project-status";
 import type { Language } from "./seller-copy";
 import "./original.css";
 import "./styles.css";
 import "./dashboard.css";
+
+const Dashboard = lazy(() => import("./dashboard").then(module => ({ default: module.Dashboard })));
+const AdminPage = lazy(() => import("./admin").then(module => ({ default: module.AdminPage })));
+const SellerFlow = lazy(() => import("./seller-flow").then(module => ({ default: module.SellerFlow })));
 
 const labels = { fr: "FR", en: "EN", zh: "中文" };
 const notices = {
@@ -69,11 +73,18 @@ function Brand({ footer = false }: { footer?: boolean }) {
 }
 
 function App() {
+  const auth = useAuth();
   const [lang, setLang] = useState<Language>("fr");
   const [hash, setHash] = useState(location.hash);
   const selling = hash.startsWith("#vendre");
   const dashboard = hash.startsWith("#dashboard");
+  const demo = hash.startsWith("#demo");
+  const admin = hash.startsWith("#admin");
+  const authRoute = /^#(login|register|forgot-password|reset-password|set-password|auth\/callback)/.test(hash)
+    || new URLSearchParams(location.search).has("code") || new URLSearchParams(location.search).has("error")
+    || hash.includes("access_token=") || hash.includes("error_description=") || auth.callbackPending;
   const [menu, setMenu] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const d = homeCopy[lang];
   useEffect(() => {
     const change = () => {
@@ -96,6 +107,8 @@ function App() {
   }, [hash, selling, dashboard]);
   return (
     <>
+      {signingOut && <p className="account-session" role="status">{{ fr: "Enregistrement et déconnexion…", en: "Saving and signing out…", zh: "正在保存并退出…" }[lang]}</p>}
+      <div inert={signingOut}>
       <header className="site-header">
         <Brand />
         <nav
@@ -171,22 +184,66 @@ function App() {
           </button>
         </div>
       </header>
-      <main>
-        {dashboard ? (
-          <Dashboard lang={lang} />
-        ) : selling ? (
-          <SellerFlow lang={lang} />
-        ) : (
-          <Home lang={lang} />
-        )}
-      </main>
+      <ProjectProvider key={auth.user?.id ?? "guest"}>
+        <AccountSession lang={lang} onLeavingChange={setSigningOut} />
+        <main>
+          <Suspense fallback={<LoadingWorkspace lang={lang} />}>
+          {authRoute ? <AuthPage lang={lang} /> : admin ? <AdminPage lang={lang} /> : demo ? <ProjectProvider mode="demo"><Dashboard lang={lang} /></ProjectProvider> : dashboard || selling ? (
+            auth.loading ? <LoadingWorkspace lang={lang} /> : !auth.user ? <AuthPage lang={lang} /> : <PrivateWorkspace lang={lang}>{dashboard ? <Dashboard lang={lang} /> : <SellerFlow lang={lang} />}</PrivateWorkspace>
+          ) : <Home lang={lang} />}
+          </Suspense>
+        </main>
+      </ProjectProvider>
       <footer>
         <Brand footer />
         <p>{d.footer}</p>
         <p>{d.legal}</p>
       </footer>
+      </div>
     </>
   );
+}
+
+function LoadingWorkspace({ lang }: { lang: Language }) {
+  return <div className="workspace-loading" role="status">{{ fr: "Chargement de votre espace…", en: "Loading your workspace…", zh: "正在载入您的工作台…" }[lang]}</div>;
+}
+
+function PrivateWorkspace({ lang, children }: { lang: Language; children: React.ReactNode }) {
+  const p = useProject();
+  if (p.loading) return <LoadingWorkspace lang={lang} />;
+  if (!p.project) return <div className="workspace-loading"><ProjectStatus lang={lang} /></div>;
+  return <>{children}</>;
+}
+
+function AccountSession({ lang, onLeavingChange }: { lang: Language; onLeavingChange: (value: boolean) => void }) {
+  const auth = useAuth();
+  const p = useProject();
+  const [leaving, setLeaving] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const t = (fr: string, en: string, zh: string) => ({ fr, en, zh })[lang];
+  const authIssue = auth.error && <span role="alert">
+    {t("Impossible de vérifier votre compte. Réessayez.", "We could not verify your account status. Please retry.", "无法确认您的账号状态，请重试。")}
+    <button type="button" disabled={auth.loading || leaving} onClick={() => void auth.refreshAuth()}>{auth.loading ? t("Vérification…", "Checking…", "正在检查…") : t("Réessayer", "Retry", "重试")}</button>
+  </span>;
+  if (!auth.user) return <div className="account-session"><a href="#login">{t("Connexion", "Sign in", "登录")}</a><a href="#demo">{t("Explorer un exemple", "Explore a sample", "查看示例工作台")}</a>{authIssue}</div>;
+  async function leave() {
+    if (leaving || p.busy) return;
+    setLeaving(true); onLeavingChange(true); setFailed(false);
+    try {
+      if (!p.isDemo && p.project && (p.saveState === "dirty" || p.saveState === "saving" || p.error) && !await p.saveNow()) { setFailed(true); return; }
+      await auth.signOut();
+      location.hash = "login";
+    } catch { setFailed(true); }
+    finally { setLeaving(false); onLeavingChange(false); }
+  }
+  return <div className="account-session">
+    <span>{auth.user.email}</span>
+    <a href="#dashboard">{t("Mon espace", "My workspace", "我的工作台")}</a>
+    {auth.staffRole && <a href="#admin">{t("Administration", "Administration", "管理后台")}</a>}
+    <button type="button" disabled={leaving || p.busy} onClick={() => void leave()}>{t("Déconnexion", "Sign out", "退出登录")}</button>
+    {authIssue}
+    {failed && <span role="alert">{t("Déconnexion interrompue. Vérifiez l’enregistrement et réessayez.", "Sign-out stopped. Check saving and retry.", "退出未完成，请检查保存状态后重试。")}</span>}
+  </div>;
 }
 
 function Home({ lang }: { lang: Language }) {
@@ -462,10 +519,13 @@ function Home({ lang }: { lang: Language }) {
   );
 }
 
-createRoot(document.getElementById("root")!).render(
+const root = createRoot(document.getElementById("root")!);
+root.render(
   <React.StrictMode>
-    <ProjectProvider>
+    <AuthProvider>
       <App />
-    </ProjectProvider>
+    </AuthProvider>
   </React.StrictMode>,
 );
+
+if (import.meta.hot) import.meta.hot.dispose(() => root.unmount());
