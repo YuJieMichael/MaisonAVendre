@@ -10,6 +10,7 @@ const mock = vi.hoisted(() => ({
   callbacks: new Set<(event: string, session: Session | null) => void>(),
   rpc: vi.fn(), getSession: vi.fn(), signOut: vi.fn(), assurance: vi.fn(),
   factors: vi.fn(), enroll: vi.fn(), verify: vi.fn(), exchange: vi.fn(), setSession: vi.fn(),
+  signUp: vi.fn(), resend: vi.fn(), signIn: vi.fn(),
 }));
 vi.mock("../src/lib/supabase", () => ({
   get backendConfigured() { return mock.configured; },
@@ -22,6 +23,7 @@ vi.mock("../src/lib/supabase", () => ({
         return { data: { subscription: { unsubscribe: () => mock.callbacks.delete(callback) } } };
       },
       exchangeCodeForSession: mock.exchange, setSession: mock.setSession,
+      signUp: mock.signUp, resend: mock.resend, signInWithPassword: mock.signIn,
       mfa: { getAuthenticatorAssuranceLevel: mock.assurance, listFactors: mock.factors, enroll: mock.enroll, challengeAndVerify: mock.verify },
     },
   } : null; },
@@ -50,6 +52,9 @@ async function render(child = <AuthPage lang="en" />, strict = false) {
 beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   vi.clearAllMocks();
+  sessionStorage.clear();
+  mock.signUp.mockResolvedValue({ data: { session: null }, error: null });
+  mock.resend.mockResolvedValue({ error: null });
   mock.exchange.mockReset(); mock.setSession.mockReset(); mock.enroll.mockReset(); mock.verify.mockReset();
   mock.callbacks.clear(); mock.session = null; mock.configured = true;
   mock.rpc.mockResolvedValue({ data: null, error: null });
@@ -63,6 +68,64 @@ beforeEach(() => {
 afterEach(async () => { await act(async () => root.unmount()); container.remove(); });
 
 describe("authentication boundaries", () => {
+  it("replaces successful signup with a waiting screen and advances only for the matching verified session", async () => {
+    window.history.replaceState(null, "", "/#register");
+    await render();
+    const input = async (name: string, value: string) => {
+      const field = container.querySelector<HTMLInputElement>(`input[name="${name}"]`)!;
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(field, value);
+        field.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    };
+    await input("email", "waiting@example.test");
+    await input("password", "test-only-password");
+    await input("password-confirm", "test-only-password");
+    await act(async () => container.querySelector('form')!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
+    await flush();
+    expect(mock.signUp).toHaveBeenCalledTimes(1);
+    expect(container.textContent).toContain("Confirm your email address");
+    expect(container.querySelector('form')).toBeNull();
+    expect(container.querySelector('input[type=password]')).toBeNull();
+    expect(sessionStorage.getItem("maisonavendre.pending-signup")).not.toContain("test-only-password");
+    await emit("SIGNED_IN", session("waiting"));
+    expect(window.location.hash).toBe("#register");
+    const verified = session("waiting"); verified.user.email_confirmed_at = new Date().toISOString();
+    await emit("SIGNED_IN", verified);
+    expect(window.location.hash).toBe("#dashboard");
+    expect(sessionStorage.getItem("maisonavendre.pending-signup")).toBeNull();
+  });
+
+  it("restores the waiting screen after refresh and does not report a failed resend as sent", async () => {
+    sessionStorage.setItem("maisonavendre.pending-signup", JSON.stringify({ email: "waiting@example.test", at: Date.now() }));
+    window.history.replaceState(null, "", "/#register");
+    mock.resend.mockResolvedValue({ error: { message: "Email rate limit exceeded" } });
+    await render();
+    const button = [...container.querySelectorAll('button')].find(el => el.textContent?.includes("Resend confirmation"))!;
+    await act(async () => button.click()); await flush();
+    expect(mock.resend).toHaveBeenCalledWith(expect.objectContaining({ type: "signup", email: "waiting@example.test" }));
+    expect(container.textContent).toContain("Email rate limit exceeded");
+    expect(container.textContent).not.toContain("Request sent.");
+    expect(button.disabled).toBe(true);
+  });
+
+  it("consumes a confirmed email session in a fresh browser without a PKCE exchange", async () => {
+    const confirmed = session("confirmed-link"); confirmed.user.email_confirmed_at = new Date().toISOString();
+    mock.setSession.mockImplementation(async () => {
+      mock.session = confirmed;
+      for (const callback of mock.callbacks) callback("SIGNED_IN", confirmed);
+      return { data: { session: confirmed }, error: null };
+    });
+    window.history.replaceState(null, "", "/#access_token=confirmation-token&refresh_token=confirmation-refresh&type=signup");
+    await render(<AuthPage lang="en" />, true);
+    expect(mock.setSession).toHaveBeenCalledTimes(1);
+    expect(mock.exchange).not.toHaveBeenCalled();
+    expect(window.location.hash).toBe("#dashboard");
+    expect(window.location.href).not.toContain("confirmation-token");
+    expect(state.recoverySession).toBe(false);
+    expect(state.invitationSession).toBe(false);
+  });
+
   it("shows an honest unavailable state without backend settings", async () => {
     mock.configured = false;
     await render();

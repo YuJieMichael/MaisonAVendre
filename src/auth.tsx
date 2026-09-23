@@ -197,6 +197,7 @@ export function useAuth() {
 
 const copy = {
   fr: {
+    waitingTitle: "Confirmez votre adresse courriel", waitingText: "Consultez votre boîte courriel et cliquez sur le dernier lien de confirmation. Une fois le courriel validé, votre espace s’ouvrira automatiquement dans le navigateur où vous ouvrez le lien.", waitingOther: "Cette page continue automatiquement si la connexion est partagée avec cet onglet. Sinon, revenez vous connecter après confirmation. Vérifiez aussi les indésirables.", verifiedLogin: "J’ai confirmé mon courriel — me connecter", resend: "Renvoyer le courriel", resent: "Demande envoyée. Consultez votre boîte courriel et utilisez le lien le plus récent.", changeEmail: "Modifier l’adresse courriel",
     eyebrow: "VOTRE ESPACE MAISONÀVENDRE", title: "Votre projet,\nà votre rythme.",
     intro: "Un seul compte pour préparer votre vente, retrouver vos documents et choisir l’aide dont vous avez besoin.",
     benefit1: "Vos projets sauvegardés", benefit2: "Des services à la carte", benefit3: "Un accès personnel sécurisé",
@@ -215,6 +216,7 @@ const copy = {
     mfaCode: "Code à 6 chiffres", mfaVerify: "Vérifier et continuer", mfaExisting: "Saisissez le code de votre application d’authentification.", mfaSecret: "Clé de configuration manuelle", mfaComplete: "Votre accès est vérifié.", needLogin: "Connectez-vous pour continuer.",
   },
   en: {
+    waitingTitle: "Confirm your email address", waitingText: "Check your inbox and click the latest confirmation link. Once your email is verified, your account opens automatically in the browser where you open the link.", waitingOther: "This page continues automatically when the sign-in is shared with this tab. Otherwise, return to sign in after confirmation. Check your spam folder too.", verifiedLogin: "I confirmed my email — sign in", resend: "Resend confirmation email", resent: "Request sent. Check your inbox and use the newest link.", changeEmail: "Change email address",
     eyebrow: "YOUR MAISONÀVENDRE SPACE", title: "Your project,\nat your own pace.",
     intro: "One account to prepare your sale, keep your documents together and choose the help you need.",
     benefit1: "Your projects, saved", benefit2: "Services when you need them", benefit3: "Secure, personal access",
@@ -230,6 +232,7 @@ const copy = {
     mfaTitle: "Protect your administrator access", mfaText: "Two-factor authentication is required to access administration.", mfaSetup: "Enable two-factor authentication", mfaScan: "Scan this QR code with your authenticator app, then enter its 6-digit code.", mfaCode: "6-digit code", mfaVerify: "Verify and continue", mfaExisting: "Enter the code from your authenticator app.", mfaSecret: "Manual setup key", mfaComplete: "Your access is verified.", needLogin: "Sign in to continue.",
   },
   zh: {
+    waitingTitle: "等待邮箱验证", waitingText: "请前往邮箱，点击最新邮件中的验证链接。邮箱验证成功后，会在打开链接的浏览器中自动进入账号。", waitingOther: "如果当前标签页共享登录状态，这里也会自动进入；若在其他浏览器验证，返回这里登录即可。没收到时也请检查垃圾邮件。", verifiedLogin: "我已验证邮箱，前往登录", resend: "重新发送验证邮件", resent: "发送请求已成功，请检查邮箱并使用最新链接。", changeEmail: "修改邮箱地址",
     eyebrow: "MAISONÀVENDRE · 您的专属空间", title: "您的卖房计划，\n由您掌握节奏。",
     intro: "一个账号，保存房屋资料、管理卖房进度，在需要时选择专业帮助。",
     benefit1: "项目资料持续保存", benefit2: "按需选择专业服务", benefit3: "独立且安全的个人空间",
@@ -256,6 +259,20 @@ function useHash() {
   return hash;
 }
 
+const pendingSignupKey = "maisonavendre.pending-signup";
+function readPendingSignup(): string {
+  try {
+    const pending = JSON.parse(sessionStorage.getItem(pendingSignupKey) || "null");
+    return pending && typeof pending.email === "string" && Date.now() - pending.at < 3600000 ? pending.email : "";
+  } catch { return ""; }
+}
+function savePendingSignup(email: string) {
+  try {
+    if (email) sessionStorage.setItem(pendingSignupKey, JSON.stringify({ email, at: Date.now() }));
+    else sessionStorage.removeItem(pendingSignupKey);
+  } catch { /* Waiting still works in memory if browser storage is unavailable. */ }
+}
+
 export function AuthPage({ lang }: { lang: Language }) {
   const c = copy[lang];
   const auth = useAuth();
@@ -267,12 +284,36 @@ export function AuthPage({ lang }: { lang: Language }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [pendingEmail, setPendingEmail] = useState(readPendingSignup);
+  const [resendWait, setResendWait] = useState(0);
+  const waiting = mode === "register" && Boolean(pendingEmail);
   useEffect(() => { setError(""); setNotice(""); setPassword(""); setConfirm(""); }, [mode]);
+  useEffect(() => {
+    if (!resendWait) return;
+    const timer = window.setTimeout(() => setResendWait(value => Math.max(0, value - 1)), 1000);
+    return () => window.clearTimeout(timer);
+  }, [resendWait]);
+  useEffect(() => {
+    if (!waiting || !auth.user?.email_confirmed_at || auth.user.email?.toLowerCase() !== pendingEmail.toLowerCase()) return;
+    savePendingSignup(""); setPendingEmail("");
+    // Supabase broadcasts verified sessions across same-origin tabs.
+    window.location.hash = "dashboard";
+  }, [waiting, auth.user, pendingEmail]);
+  const resend = async () => {
+    if (!supabase || busy || resendWait || !pendingEmail) return;
+    setBusy(true); setError(""); setNotice("");
+    try {
+      const { error: resendError } = await supabase.auth.resend({ type: "signup", email: pendingEmail, options: { emailRedirectTo: authCallbackUrl() } });
+      if (resendError) throw resendError;
+      setNotice(c.resent); setResendWait(60);
+    } catch (err) { setError(messageOf(err)); setResendWait(60); }
+    finally { setBusy(false); }
+  };
   const passwordMode = mode === "reset" || mode === "invite";
   const canSetPassword = Boolean(auth.user && (mode === "reset" ? auth.recoverySession : auth.invitationSession));
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!supabase || busy) return;
+    if (!supabase || busy || waiting) return;
     setError(""); setNotice("");
     if ((mode === "register" || passwordMode) && password !== confirm) { setError(c.mismatch); return; }
     setBusy(true);
@@ -280,14 +321,20 @@ export function AuthPage({ lang }: { lang: Language }) {
       if (mode === "login") {
         auth.clearRecovery();
         const { error: resultError } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        if (resultError?.code === "email_not_confirmed") {
+          const address = email.trim(); savePendingSignup(address); setPendingEmail(address);
+          setPassword(""); setConfirm(""); window.location.hash = "register";
+          return;
+        }
         if (resultError) throw resultError;
+        savePendingSignup(""); setPendingEmail("");
         window.location.hash = "dashboard";
       } else if (mode === "register") {
         auth.clearRecovery();
         const { data, error: resultError } = await supabase.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: authCallbackUrl(), data: { preferred_language: lang } } });
         if (resultError) throw resultError;
         if (data.session) window.location.hash = "dashboard";
-        else { setNotice(c.verify); setPassword(""); setConfirm(""); }
+        else { const address = email.trim(); savePendingSignup(address); setPendingEmail(address); setResendWait(60); setPassword(""); setConfirm(""); }
       } else if (mode === "forgot") {
         const { error: resultError } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: authCallbackUrl() });
         if (resultError) throw resultError;
@@ -312,8 +359,17 @@ export function AuthPage({ lang }: { lang: Language }) {
     </section>
     <section className="auth-card" aria-labelledby="auth-title">
       <div className="auth-symbol"><LockKeyhole size={25} /></div>
-      <h2 id="auth-title">{mode === "callback" ? (auth.callbackError || (!auth.callbackPending && !auth.loading) ? c.linkFailed : c.callback) : c[mode]}</h2>
+      <h2 id="auth-title">{waiting ? c.waitingTitle : mode === "callback" ? (auth.callbackError || (!auth.callbackPending && !auth.loading) ? c.linkFailed : c.callback) : c[mode]}</h2>
       {!backendConfigured ? <div className="auth-notice"><strong>{c.unavailable}</strong><p>{c.unavailableText}</p></div>
+      : waiting ? <>
+          <div className="auth-notice" role="status"><strong>{pendingEmail}</strong><p>{c.waitingText}</p></div>
+          <p className="auth-subtitle">{c.waitingOther}</p>
+          {error && <div className="auth-error" role="alert">{error}</div>}
+          {notice && <div className="auth-notice" role="status">{notice}</div>}
+          <a className="auth-primary" href="#login" onClick={() => setEmail(pendingEmail)}>{c.verifiedLogin}<ArrowRight size={18} /></a>
+          <button className="auth-text-button" type="button" disabled={busy || resendWait > 0} onClick={() => { void resend(); }}>{c.resend}{resendWait > 0 ? ` (${resendWait}s)` : ""}</button>
+          <button className="auth-text-button" type="button" disabled={busy} onClick={() => { savePendingSignup(""); setPendingEmail(""); setNotice(""); setError(""); }}>{c.changeEmail}</button>
+        </>
       : mode === "callback" ? <div role={auth.callbackError ? "alert" : "status"} className={auth.callbackError ? "auth-error" : "auth-notice"}>
           {auth.callbackPending || auth.loading ? c.callback : <>
             <p>{c.linkHelp}</p>

@@ -63,7 +63,7 @@ npx supabase db push
 
 以 Vite 实际显示的地址为准：`localhost`、`127.0.0.1` 和不同端口需要分别配置。如果网页位于子目录，例如 `/MaisonAVendre/`，Site URL 与回跳地址都必须保留该路径。正式环境使用明确地址，不配置任意站点通配符。[回跳地址说明](https://supabase.com/docs/guides/auth/redirect-urls)
 
-确认、找回密码和邀请邮件模板应保留 Supabase 的验证链接 `{{ .ConfirmationURL }}`，不要改成普通工作台链接。注册及密码重置使用 PKCE；测试时使用发起请求的同一浏览器打开邮件链接。
+确认、找回密码和邀请邮件模板应保留 Supabase 的验证链接 `{{ .ConfirmationURL }}`，不要改成普通工作台链接。注册及密码重置采用纯前端邮件流程（implicit），Supabase 验证邮件后返回登录状态，由 AuthProvider 验证并清除地址栏中的令牌；不依赖原浏览器的 PKCE 临时凭据。旧 PKCE 链接保留兼容处理，但缺少原凭据时需重新申请新邮件。
 
 Supabase 默认发信服务主要用于测试，收件人受到限制，通常只能发送给组织团队中的邮箱。真实客户注册和邀请需要配置自己的 SMTP、发件人域名及邮件服务；不要为了收到邮件把客户加成 Supabase 组织成员，也不要关闭邮箱验证来绕过发信问题。[SMTP 说明](https://supabase.com/docs/guides/auth/auth-smtp)
 

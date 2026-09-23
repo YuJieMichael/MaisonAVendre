@@ -39,12 +39,12 @@ describe("browser Supabase configuration", () => {
     expect(module.supabase).toBeNull();
     expect(createClient).not.toHaveBeenCalled();
   });
-  it("constructs a PKCE client only for a valid public configuration", async () => {
+  it("constructs a browser email-flow client only for a valid public configuration", async () => {
     vi.resetModules(); createClient.mockClear();
     vi.stubEnv("VITE_SUPABASE_URL", url);
     vi.stubEnv("VITE_SUPABASE_PUBLISHABLE_KEY", publicKey);
     const module = await import("../src/lib/supabase");
     expect(module.backendConfigured).toBe(true);
-    expect(createClient).toHaveBeenCalledWith(url, publicKey, expect.objectContaining({ auth: expect.objectContaining({ flowType: "pkce", detectSessionInUrl: false }) }));
+    expect(createClient).toHaveBeenCalledWith(url, publicKey, expect.objectContaining({ auth: expect.objectContaining({ flowType: "implicit", detectSessionInUrl: false }) }));
   });
 });
