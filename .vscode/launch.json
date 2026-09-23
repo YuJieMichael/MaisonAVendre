@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Website / Site web / 网页",
+      "type": "msedge",
+      "request": "launch",
+      "url": "http://127.0.0.1:5173/#acheter",
+      "webRoot": "${workspaceFolder}",
+      "preLaunchTask": "2. Start website / Démarrer / 启动网页",
+      "sourceMaps": true
+    },
+    {
+      "name": "Open running website / Site démarré / 调试已启动网页",
+      "type": "msedge",
+      "request": "launch",
+      "url": "http://127.0.0.1:5173/#acheter",
+      "webRoot": "${workspaceFolder}",
+      "sourceMaps": true
+    }
+  ]
+}

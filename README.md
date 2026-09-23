@@ -1,12 +1,24 @@
 # MaisonÀVendre
 
-Montréal real estate homepage, trilingual seller workspace and Supabase backend built with **React, TypeScript, PostgreSQL and Supabase Edge Functions (Deno)**. Editable source code, including authentication, private project storage, access rules and a staff review interface.
+Montréal property discovery, trilingual seller workspace and Supabase backend built with **React, TypeScript, PostgreSQL and Supabase Edge Functions (Deno)**. Browse a clearly labelled sample catalogue, filter and sort properties, then open their details. Editable source includes authentication, private project storage, access rules and staff review.
+
+Plateforme immobilière montréalaise : catalogue de démonstration avec filtres et fiches détaillées, espace vendeur trilingue et backend Supabase. Le code source est disponible ; chaque nouvelle installation doit renseigner sa connexion Supabase.
 
 产品方向：卖家自主推进，再按需要增加摄影、视频、市场分析、咨询或经纪帮助。首阶段服务区域为蒙特利尔，价格待定。
 
-**后端源码已实现，云端仍需配置。** 尚未在此仓库填入真实项目连接信息；组织地址不能代替 Supabase 项目 ID。按照 [后端接入指南](docs/backend-setup.md) 创建项目、应用数据库迁移、配置邮件并连接网页。未配置时，真实账号入口会明确显示暂不可用。
+本机已连接开发用 Supabase 项目，连接信息保存在不提交 Git 的 `.env.local`。新下载的源码仍需按照 [后端接入指南](docs/backend-setup.md) 配置自己的环境；没有配置时，账号入口会明确显示暂不可用。实际部署与待办记录见 [开发环境状态](docs/current-setup.md)。
 
 ## 本地运行 / Run locally
+
+[Windows startup guide — English, Français, 中文](docs/local-start.md): install, start, stop and update the website locally.
+
+For VS Code, open `MaisonAVendre.code-workspace`, then use **Terminal → Run Task** to install dependencies and start the site. / Dans VS Code, ouvrez le fichier workspace puis lancez les tâches du terminal. / 用 VS Code 打开工作区文件，再从终端菜单安装依赖、启动网页。
+
+[Guide de démarrage Windows](docs/local-start.md) : installation, démarrage, arrêt et mise à jour du site en local.
+
+[Windows 手动启动说明](docs/local-start.md)：首次安装、以后启动、停止服务和从 GitHub 更新的步骤。
+
+PR merges are counted automatically in [Actions → PR merge count](https://github.com/YuJieMichael/MaisonAVendre/actions/workflows/merge-count.yml). / Les PR fusionnées sont comptées automatiquement dans Actions. / 合并到 `main` 的 PR 会自动计数，直接 push 不计入。
 
 Use Node.js 22.18+ or a supported newer LTS release.
 
@@ -16,6 +28,8 @@ npm run dev
 ```
 
 Open the local address printed by Vite. The seller journey is at `/#vendre`, the private dashboard at `/#dashboard`, and project editing at `/#vendre/edit`. Customers must sign in to use their real workspace. `/#demo` is a separate, clearly labelled example; `/#admin` is the invited staff interface.
+
+Property discovery is at `/#acheter`; detail links use `/#propriete/demo-01`. Filters stay in the URL across refreshes and detail navigation. The 12 listings, prices and dates are fictional; stock photographs are illustrative. Browsing never reads private seller projects. Remote images fall back to the bundled homepage photo if unavailable.
 
 For real account functionality, create `.env.local` using `.env.example` and supply only your Supabase project URL and browser-safe publishable key. See the [setup guide](docs/backend-setup.md). Never put a service-role/secret key in a `VITE_` variable. Restart Vite after changing environment settings.
 
@@ -53,7 +67,7 @@ The build checks TypeScript and generates `dist/`. Relative asset paths support 
 The separate `/#demo` workspace uses labelled fictional examples. Demo selections are temporary, and real uploads are unavailable there. A demonstration never substitutes for a successful server save.
 
 - All optional service prices show **pricing to be confirmed**. Selection records service interest, not an order. Switching support records a preference, not a brokerage mandate.
-- No payment processing, confirmed booking, public listing publication, real buyer account, enquiry feed or offer-submission system is implemented. Property search remains unavailable.
+- No payment processing, confirmed booking, real public listing publication, buyer account, enquiry feed or offer-submission system is implemented. Property search currently operates on the explicitly labelled demonstration catalogue.
 - The homepage contact form validates inputs but explicitly says nothing was sent.
 - Brokerage and self-sale presentation services are separate. This UI is not a compliant service agreement.
 - Some homepage marketing was retained from the published site. Before production, verify service claims, broker identity/licence, company information, privacy/terms and personal-data collection notices. Footer legal labels are placeholders, not completed policy pages.

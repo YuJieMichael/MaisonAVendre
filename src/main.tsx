@@ -29,8 +29,10 @@ import "./dashboard.css";
 const Dashboard = lazy(() => import("./dashboard").then(module => ({ default: module.Dashboard })));
 const AdminPage = lazy(() => import("./admin").then(module => ({ default: module.AdminPage })));
 const SellerFlow = lazy(() => import("./seller-flow").then(module => ({ default: module.SellerFlow })));
+const ListingsPage = lazy(() => import("./listings").then(module => ({ default: module.ListingsPage })));
+const FeaturedProperties = lazy(() => import("./listings").then(module => ({ default: module.FeaturedProperties })));
 
-const labels = { fr: "FR", en: "EN", zh: "中文" };
+const labels = { en: "EN", fr: "FR", zh: "中文" };
 const notices = {
   fr: {
     search: "La recherche de propriétés n’est pas encore disponible.",
@@ -80,6 +82,7 @@ function App() {
   const dashboard = hash.startsWith("#dashboard");
   const demo = hash.startsWith("#demo");
   const admin = hash.startsWith("#admin");
+  const browsing = hash.startsWith("#acheter") || hash.startsWith("#propriete/");
   const authRoute = /^#(login|register|forgot-password|reset-password|set-password|auth\/callback)/.test(hash)
     || new URLSearchParams(location.search).has("code") || new URLSearchParams(location.search).has("error")
     || hash.includes("access_token=") || hash.includes("error_description=") || auth.callbackPending;
@@ -121,7 +124,7 @@ function App() {
               key={i}
               href={
                 i === 0
-                  ? "#parcours"
+                  ? "#acheter"
                   : i === 1
                     ? "#vendre"
                     : i === 2
@@ -129,6 +132,7 @@ function App() {
                       : "#processus"
               }
               onClick={() => setMenu(false)}
+              aria-current={i === 0 && browsing ? "page" : undefined}
             >
               {n}
             </a>
@@ -190,7 +194,7 @@ function App() {
           <Suspense fallback={<LoadingWorkspace lang={lang} />}>
           {authRoute ? <AuthPage lang={lang} /> : admin ? <AdminPage lang={lang} /> : demo ? <ProjectProvider mode="demo"><Dashboard lang={lang} /></ProjectProvider> : dashboard || selling ? (
             auth.loading ? <LoadingWorkspace lang={lang} /> : !auth.user ? <AuthPage lang={lang} /> : <PrivateWorkspace lang={lang}>{dashboard ? <Dashboard lang={lang} /> : <SellerFlow lang={lang} />}</PrivateWorkspace>
-          ) : <Home lang={lang} />}
+          ) : browsing ? <ListingsPage lang={lang} hash={hash} /> : <Home lang={lang} />}
           </Suspense>
         </main>
       </ProjectProvider>
@@ -250,7 +254,7 @@ function Home({ lang }: { lang: Language }) {
   const d = homeCopy[lang];
   const [value, setValue] = useState("650000");
   const [tab, setTab] = useState<"seller" | "buyer">("seller");
-  const [searchNotice, setSearchNotice] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [sent, setSent] = useState(false);
   const formatted = new Intl.NumberFormat(
     lang === "zh" ? "zh-CN" : `${lang}-CA`,
@@ -269,36 +273,34 @@ function Home({ lang }: { lang: Language }) {
           <h1>{d.heroTitle}</h1>
           <p className="hero-copy">{d.heroText}</p>
           <div className="hero-actions">
-            <a className="primary-link" href="#vendre">
-              {d.sell}
+            <a className="primary-link" href="#acheter">
+              {d.buy}
               <ArrowRight />
             </a>
-            <a className="secondary-link" href="#parcours">
-              {d.buy}
+            <a className="secondary-link" href="#vendre">
+              {d.sell}
             </a>
           </div>
           <form
             className="search-bar"
             onSubmit={(e) => {
               e.preventDefault();
-              setSearchNotice(true);
+              location.hash = `acheter${searchQuery.trim() ? `?q=${encodeURIComponent(searchQuery.trim())}` : ""}`;
             }}
           >
             <MapPin aria-hidden="true" />
             <input
               placeholder={d.searchPlaceholder}
               aria-label={d.searchPlaceholder}
+              value={searchQuery}
+              maxLength={120}
+              onChange={event => setSearchQuery(event.target.value)}
             />
             <button type="submit">
               <Search aria-hidden="true" />
               {d.searchButton}
             </button>
           </form>
-          {searchNotice && (
-            <p className="hero-notice" role="status">
-              {notices[lang].search}
-            </p>
-          )}
         </div>
         <div className="trust-row">
           {d.trust.map((t, i) => (
@@ -309,6 +311,7 @@ function Home({ lang }: { lang: Language }) {
           ))}
         </div>
       </section>
+      <FeaturedProperties lang={lang} />
       <section id="parcours" className="section route-section">
         <div className="section-heading">
           <div>
@@ -333,7 +336,7 @@ function Home({ lang }: { lang: Language }) {
                   </li>
                 ))}
               </ul>
-              <a href={kind === "seller" ? "#vendre" : "#contact"}>
+              <a href={kind === "seller" ? "#vendre" : "#acheter"}>
                 {d[`${kind}Cta`]}
                 <ArrowRight />
               </a>
