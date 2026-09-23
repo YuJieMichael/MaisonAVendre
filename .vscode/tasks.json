@@ -16,10 +16,15 @@
       "type": "shell",
       "command": "npm",
       "windows": { "command": "npm.cmd" },
-      "args": ["run", "dev"],
+      "args": ["run", "dev", "--", "--port", "5173", "--strictPort"],
       "options": { "cwd": "${workspaceFolder}" },
       "isBackground": true,
-      "problemMatcher": [],
+      "problemMatcher": {
+        "owner": "vite",
+        "pattern": { "regexp": "^(.*)\\((\\d+),(\\d+)\\): (error|warning) (.*)$", "file": 1, "line": 2, "column": 3, "severity": 4, "message": 5 },
+        "background": { "activeOnStart": true, "beginsPattern": ".*VITE.*", "endsPattern": ".*Local:.*http://127\\.0\\.0\\.1:5173/.*" }
+      },
+      "runOptions": { "instanceLimit": 1 },
       "presentation": { "reveal": "always", "panel": "dedicated" }
     },
     {

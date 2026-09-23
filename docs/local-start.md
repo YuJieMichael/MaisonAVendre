@@ -6,6 +6,8 @@ Install the Windows **Node.js LTS** installer from [nodejs.org](https://nodejs.o
 
 **Visual Studio Code:** extract the ZIP first, then open `MaisonAVendre.code-workspace` in [VS Code](https://code.visualstudio.com/). Choose **Terminal → Run Task → 1. Install dependencies**, wait for completion, then **2. Start website**. Later, use only task 2. Open the Local link printed in the terminal. The package contains editable source and tasks; Node.js and downloaded dependencies are installed separately. No tasks run automatically when the workspace opens.
 
+**Debugging:** in Run and Debug, choose **Website / Site web / 网页** and press F5 to start Vite and launch Edge with source debugging. If port 5173 is already running (for example, from Codex), choose **Open running website** instead. Stop the server with Ctrl+C in its terminal. The VS Code task fixes port 5173 with `--strictPort` so Supabase email callbacks stay valid. The workspace makes a standard Windows Node.js installation available in new terminals. Keep `.env.local` in this project folder; do not paste keys into launch settings.
+
 Download and extract **Code → Download ZIP** from [the repository](https://github.com/YuJieMichael/MaisonAVendre), or clone it if Git is installed:
 
 ```powershell
@@ -40,6 +42,8 @@ Installez **Node.js LTS pour Windows** depuis [nodejs.org](https://nodejs.org/en
 
 **Visual Studio Code :** extrayez d’abord le ZIP, puis ouvrez `MaisonAVendre.code-workspace` dans [VS Code](https://code.visualstudio.com/). Choisissez **Terminal → Run Task → 1. Install dependencies**, attendez la fin, puis lancez **2. Start website**. Les fois suivantes, la tâche 2 suffit. Ouvrez le lien Local affiché dans le terminal. L’archive contient le code modifiable et les tâches ; Node.js et les dépendances sont installés séparément. Aucune tâche ne se lance automatiquement à l’ouverture.
 
+**Débogage :** choisissez **Website / Site web / 网页** dans Run and Debug, puis F5 pour démarrer Vite et Edge. Si le port 5173 est déjà utilisé par ce site, choisissez **Open running website**. Ctrl+C dans le terminal arrête le serveur. La tâche fixe le port 5173 avec `--strictPort` pour préserver les retours Supabase. Gardez `.env.local` dans le dossier du projet ; aucune clé n’est nécessaire dans les paramètres du débogueur.
+
 Dans [le dépôt GitHub](https://github.com/YuJieMichael/MaisonAVendre), choisissez **Code → Download ZIP** et extrayez l’archive. Si Git est installé, vous pouvez aussi cloner le dépôt :
 
 ```powershell
@@ -73,6 +77,8 @@ L’accueil et la démonstration fonctionnent sans Supabase. Les comptes réels,
 ### Windows 手动启动 MaisonÀVendre
 
 **使用 Visual Studio Code：** 先解压 ZIP，再用 [VS Code](https://code.visualstudio.com/) 打开 `MaisonAVendre.code-workspace`。点击 **Terminal（终端）→ Run Task（运行任务）→ 1. Install dependencies（安装依赖）**，完成后运行 **2. Start website（启动网页）**。以后只需运行第 2 个任务，打开终端显示的 Local 地址。源码包不捆绑 Node.js 或 `node_modules`，首次仍需安装 Node.js 并联网下载依赖。打开工作区不会自动执行命令。
+
+**调试：** 左侧 Run and Debug（运行和调试）选择 **Website / Site web / 网页**，按 F5 可启动网站并在 Edge 中调试源码。如果网站已经由 Codex 或其他终端在 5173 端口运行，选择 **Open running website / 调试已启动网页**，避免重复启动。停止服务用终端里的 Ctrl+C。任务固定使用 5173 端口，保证 Supabase 邮件回跳有效；本机 `.env.local` 已配置时直接使用，不需要把密钥填入调试设置。
 
 网站源码在 [YuJieMichael/MaisonAVendre](https://github.com/YuJieMichael/MaisonAVendre)。下载源码后，需要启动本地服务，不能直接双击 `index.html`。
 
