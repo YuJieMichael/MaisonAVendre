@@ -4,7 +4,7 @@ export const sellerCopy = {
     eyebrow: "VENDRE À VOTRE FAÇON",
     title: "Votre propriété. Votre façon de vendre.",
     intro:
-      "À Montréal, avancez à votre rythme : vendez vous-même et ajoutez de l’aide au besoin, ou choisissez un courtier.",
+      "Partout au Québec, avancez à votre rythme : vendez vous-même et ajoutez de l’aide au besoin, ou choisissez un courtier.",
     steps: [
       "Votre formule",
       "Votre propriété",
@@ -112,7 +112,7 @@ export const sellerCopy = {
     eyebrow: "SELL YOUR WAY",
     title: "Your property. Your way to sell.",
     intro:
-      "In Montréal, sell at your own pace: start independently and add help as you need it, or choose a broker.",
+      "Across Québec, sell at your own pace: start independently and add help as you need it, or choose a broker.",
     steps: ["Your service", "Your property", "Your contact details", "Review"],
     with: "With a broker",
     without: "Without a broker",
@@ -215,7 +215,7 @@ export const sellerCopy = {
     eyebrow: "选择适合您的卖房方式",
     title: "您的房产，由您选择怎样出售。",
     intro:
-      "服务蒙特利尔：先自主卖房，再按需要增加专业帮助；也可以选择经纪全程协助。",
+      "服务魁北克全省：先自主卖房，再按需要增加专业帮助；也可以选择经纪全程协助。",
     steps: ["选择方案", "房屋资料", "联系方式", "核对信息"],
     with: "有经纪服务",
     without: "无经纪自售",

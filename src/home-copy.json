@@ -2,7 +2,7 @@
   "fr": {
     "nav": ["Acheter", "Vendre", "Notre approche", "Ressources"],
     "account": "Espace client",
-    "eyebrow": "Montréal, à votre façon",
+    "eyebrow": "Partout au Québec, à votre façon",
     "heroTitle": "Votre projet immobilier mérite plus qu’une simple annonce.",
     "heroText": "Commencez votre vente à votre rythme. Ajoutez une séance photo, une analyse de marché ou un accompagnement professionnel quand vous en avez besoin.",
     "buy": "Je veux acheter",
@@ -85,13 +85,13 @@
     "project": "Votre projet en quelques mots",
     "contact": "Demander un appel",
     "sent": "Merci — votre demande est prête. Un conseiller pourra vous recontacter.",
-    "footer": "Montréal · Français, English, 中文",
+    "footer": "Québec · Français, English, 中文",
     "legal": "Confidentialité · Conditions · OACIQ"
   },
   "en": {
     "nav": ["Buy", "Sell", "Our approach", "Resources"],
     "account": "Client portal",
-    "eyebrow": "Montréal real estate, your way",
+    "eyebrow": "Québec real estate, your way",
     "heroTitle": "Your real estate project deserves more than a listing.",
     "heroText": "Start your sale at your own pace. Add photography, market analysis or professional support whenever you need it.",
     "buy": "I want to buy",
@@ -174,13 +174,13 @@
     "project": "Tell us briefly about your project",
     "contact": "Request a call",
     "sent": "Thank you — your request is ready. An advisor can follow up with you.",
-    "footer": "Montréal · Français, English, 中文",
+    "footer": "Québec · Français, English, 中文",
     "legal": "Privacy · Terms · OACIQ"
   },
   "zh": {
     "nav": ["买房", "卖房", "我们的服务", "房产资讯"],
     "account": "客户中心",
-    "eyebrow": "蒙特利尔卖房，按您的节奏",
+    "eyebrow": "服务魁北克全省，按您的节奏卖房",
     "heroTitle": "您的房产计划，不应该只是一条网上广告。",
     "heroText": "暂时不想找经纪，也可以开始卖房。摄影、市场分析、专业咨询，按需要逐步添加，整个项目都在同一个工作台。",
     "buy": "我要买房",
@@ -235,7 +235,7 @@
     "project": "简单介绍您的买房或卖房计划",
     "contact": "预约电话沟通",
     "sent": "谢谢，您的咨询已经准备好，经纪可以随后与您联系。",
-    "footer": "蒙特利尔 · 法语 / 英语 / 中文",
+    "footer": "魁北克全省 · 法语 / 英语 / 中文",
     "legal": "隐私政策 · 使用条款 · OACIQ"
   }
 }

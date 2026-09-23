@@ -1,10 +1,10 @@
 # MaisonÀVendre
 
-Montréal property discovery, trilingual seller workspace and Supabase backend built with **React, TypeScript, PostgreSQL and Supabase Edge Functions (Deno)**. Browse a clearly labelled sample catalogue, filter and sort properties, then open their details. Editable source includes authentication, private project storage, access rules and staff review.
+Québec-wide property discovery, trilingual seller workspace and Supabase backend built with **React, TypeScript, PostgreSQL and Supabase Edge Functions (Deno)**. Browse a clearly labelled sample catalogue, filter and sort properties, then open their details. Editable source includes authentication, private project storage, access rules and staff review.
 
-Plateforme immobilière montréalaise : catalogue de démonstration avec filtres et fiches détaillées, espace vendeur trilingue et backend Supabase. Le code source est disponible ; chaque nouvelle installation doit renseigner sa connexion Supabase.
+Plateforme immobilière pour tout le Québec : catalogue de démonstration avec filtres et fiches détaillées, espace vendeur trilingue et backend Supabase. Le code source est disponible ; chaque nouvelle installation doit renseigner sa connexion Supabase.
 
-产品方向：卖家自主推进，再按需要增加摄影、视频、市场分析、咨询或经纪帮助。首阶段服务区域为蒙特利尔，价格待定。
+产品方向：卖家自主推进，再按需要增加摄影、视频、市场分析、咨询或经纪帮助。服务范围为整个魁北克省，价格待定。
 
 本机已连接开发用 Supabase 项目，连接信息保存在不提交 Git 的 `.env.local`。新下载的源码仍需按照 [后端接入指南](docs/backend-setup.md) 配置自己的环境；没有配置时，账号入口会明确显示暂不可用。实际部署与待办记录见 [开发环境状态](docs/current-setup.md)。
 
