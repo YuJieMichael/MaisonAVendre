@@ -1,0 +1,37 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "1. Install dependencies / Installer / 安装依赖",
+      "type": "shell",
+      "command": "npm",
+      "windows": { "command": "npm.cmd" },
+      "args": ["ci"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "2. Start website / Démarrer / 启动网页",
+      "type": "shell",
+      "command": "npm",
+      "windows": { "command": "npm.cmd" },
+      "args": ["run", "dev"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "3. Build website / Compiler / 构建网页",
+      "type": "shell",
+      "command": "npm",
+      "windows": { "command": "npm.cmd" },
+      "args": ["run", "build"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    }
+  ]
+}

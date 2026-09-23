@@ -2,13 +2,23 @@
 
 Montréal real estate homepage, trilingual seller workspace and Supabase backend built with **React, TypeScript, PostgreSQL and Supabase Edge Functions (Deno)**. Editable source code, including authentication, private project storage, access rules and a staff review interface.
 
+Plateforme immobilière montréalaise, espace vendeur trilingue et backend Supabase : comptes, dossiers privés, fichiers et examen par l’équipe. Le code source est disponible ; la connexion au projet Supabase et la mise en ligne restent à configurer.
+
 产品方向：卖家自主推进，再按需要增加摄影、视频、市场分析、咨询或经纪帮助。首阶段服务区域为蒙特利尔，价格待定。
 
 **后端源码已实现，云端仍需配置。** 尚未在此仓库填入真实项目连接信息；组织地址不能代替 Supabase 项目 ID。按照 [后端接入指南](docs/backend-setup.md) 创建项目、应用数据库迁移、配置邮件并连接网页。未配置时，真实账号入口会明确显示暂不可用。
 
 ## 本地运行 / Run locally
 
-Windows 用户可以先看 [中文手动启动说明](docs/local-start.zh-CN.md)，包含首次安装、以后启动、停止服务和从 GitHub 更新的步骤。
+[Windows startup guide — English, Français, 中文](docs/local-start.md): install, start, stop and update the website locally.
+
+For VS Code, open `MaisonAVendre.code-workspace`, then use **Terminal → Run Task** to install dependencies and start the site. / Dans VS Code, ouvrez le fichier workspace puis lancez les tâches du terminal. / 用 VS Code 打开工作区文件，再从终端菜单安装依赖、启动网页。
+
+[Guide de démarrage Windows](docs/local-start.md) : installation, démarrage, arrêt et mise à jour du site en local.
+
+[Windows 手动启动说明](docs/local-start.md)：首次安装、以后启动、停止服务和从 GitHub 更新的步骤。
+
+PR merges are counted automatically in [Actions → PR merge count](https://github.com/YuJieMichael/MaisonAVendre/actions/workflows/merge-count.yml). / Les PR fusionnées sont comptées automatiquement dans Actions. / 合并到 `main` 的 PR 会自动计数，直接 push 不计入。
 
 Use Node.js 22.18+ or a supported newer LTS release.
 
