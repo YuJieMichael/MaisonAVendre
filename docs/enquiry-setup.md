@@ -23,3 +23,11 @@ Frontend preview and backend source are implemented locally. Migration, new func
 The worker uses atomic database claims, a 5-minute lease and stable provider idempotency keys. Failed attempts preserve their batch. After 23 hours of uncertain delivery a batch is marked `needs_review` rather than risking a duplicate after Resend's 24-hour idempotency window. Inspect provider records by batch ID; reconcile `provider_id`/`sent_at` before any manual retry. No personal information is logged by the handlers. Customer roles cannot read the inbox tables; only the server and database administrator can access them. CSV cells neutralize spreadsheet formulas and preserve UTF-8 Chinese/French.
 
 References: [Resend email API](https://resend.com/docs/api-reference/emails/send-email), [Supabase scheduled functions](https://supabase.com/docs/guides/functions/schedule-functions).
+
+## Optional preferences
+
+English: Hybrid sellers can select photography, video, listing presentation, price analysis, viewings and offer support, or choose unsure. Both buyer and seller forms offer contact language, method and availability. These remain optional and are included in validated enquiry payloads and CSV exports. The comparison describes proposed collaboration; scope and fees are agreed before commitment.
+
+Français : Les vendeurs en mode collaboratif choisissent les aides souhaitées. Les préférences de langue, de contact et de disponibilité restent facultatives et sont incluses dans les fichiers CSV.
+
+中文：协作卖房可多选所需帮助，也可选择暂时不确定。买卖表单均有联系语言、方式与方便联系时间，全部选填，并纳入汇总 CSV。收集和发送仍待配置后启用。

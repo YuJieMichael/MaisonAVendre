@@ -63,3 +63,37 @@ it('requires a supported selling mode in server validation',()=>{
   for (const service of ['broker','hybrid']) expect(parseEnquiry({...payload,service}).service).toBe(service);
   for (const service of ['','self','staff']) expect(()=>parseEnquiry({...payload,service})).toThrow();
 });
+it('collects multiple services and contact preferences through validation and CSV export',async()=>{
+  vi.stubEnv('VITE_ENQUIRY_ENABLED','true');const send=vi.fn().mockResolvedValue({ok:true,status:200,json:async()=>({ok:true})});vi.stubGlobal('fetch',send);
+  const form=await render('seller',false);
+  await act(async()=>document.querySelectorAll<HTMLButtonElement>('.selling-option')[1].click());
+  for (const id of ['photos','video']) await act(async()=>document.querySelector<HTMLInputElement>(`input[value="${id}"]`)!.click());
+  (form.elements.namedItem('name') as HTMLInputElement).value='Seller';(form.elements.namedItem('email') as HTMLInputElement).value='seller@example.com';
+  (form.elements.namedItem('contactLanguage') as HTMLSelectElement).value='zh';
+  (form.elements.namedItem('contactMethod') as HTMLSelectElement).value='email';
+  (form.elements.namedItem('contactTime') as HTMLInputElement).value='工作日晚上';
+  await act(async()=>form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})));
+  const parsed=parseEnquiry(JSON.parse(send.mock.calls[0][1].body));
+  expect(parsed.assistance).toBe('photos,video');expect(parsed.contactLanguage).toBe('zh');expect(parsed.contactMethod).toBe('email');
+  const csv=enquiriesCsv([parsed]);expect(csv).toContain('photos,video');expect(csv).toContain('工作日晚上');expect(csv).toContain('contactLanguage');
+});
+it('makes unsure exclusive and preserves service choices across a mode change',async()=>{
+  await render('seller',false);
+  await act(async()=>document.querySelectorAll<HTMLButtonElement>('.selling-option')[1].click());
+  const click=async(id:string)=>act(async()=>document.querySelector<HTMLInputElement>(`input[value="${id}"]`)!.click());
+  await click('photos');await click('unsure');
+  expect(document.querySelector<HTMLInputElement>('input[value="photos"]')!.checked).toBe(false);
+  await click('video');expect(document.querySelector<HTMLInputElement>('input[value="unsure"]')!.checked).toBe(false);
+  await act(async()=>document.querySelector<HTMLButtonElement>('.selling-selection button')!.click());
+  await act(async()=>document.querySelectorAll<HTMLButtonElement>('.selling-option')[0].click());
+  expect(document.querySelector('.enquiry-services')).toBeNull();
+  await act(async()=>document.querySelector<HTMLButtonElement>('.selling-selection button')!.click());
+  await act(async()=>document.querySelectorAll<HTMLButtonElement>('.selling-option')[1].click());
+  expect(document.querySelector<HTMLInputElement>('input[value="video"]')!.checked).toBe(true);
+});
+it('rejects unsupported preference values and clears inapplicable services',()=>{
+  const p={requestId:crypto.randomUUID(),kind:'seller',service:'hybrid',language:'en',name:'Test',email:'test@example.com'};
+  for(const extra of [{assistance:'unknown'},{assistance:'photos,photos'},{assistance:'unsure,photos'},{contactLanguage:'xx'},{contactMethod:'sms'},{contactTime:'x'.repeat(201)}]) expect(()=>parseEnquiry({...p,...extra})).toThrow();
+  expect(parseEnquiry({...p,service:'broker',assistance:'photos'}).assistance).toBe('');
+  expect(parseEnquiry({...p,kind:'buyer',assistance:'photos'}).assistance).toBe('');
+});

@@ -2,6 +2,7 @@ import { useRef, useState, type FormEvent } from 'react';
 import type { Language } from './seller-copy';
 import { backendConfigured } from './lib/supabase';
 import './enquiry.css';
+import { assistanceIds, enquiryOptions } from './enquiry-options';
 
 const copy = {
   en: { buy: 'Tell us about your home search', sell: 'Tell us about your property', intro: 'No account needed. Send your details to the MaisonÀVendre team so we can follow up on your request.', basic: 'Your contact details', optional: 'Your project · optional', required: '* Required fields. All other fields are optional.', name: 'Full name', email: 'Email', phone: 'Phone', city: 'Preferred cities / neighbourhoods', sellerCity: 'Property city', min: 'Minimum budget (CAD)', max: 'Maximum budget (CAD)', price: 'Expected price (CAD)', address: 'Property address', type: 'Property type', types: ['Not specified', 'House', 'Condo', 'Plex', 'Commercial'], needs: 'Requirements / additional information', timing: 'Preferred timeline', mode: 'Preferred support', modes: ['Undecided', 'Self-sale / optional services', 'With a broker'], privacy: 'By sending this form, you ask MaisonÀVendre to store your details and include them in a private email summary and contact you about this request. This does not subscribe you to marketing messages. Please do not include financial documents or other sensitive information.', submit: 'Send my request', sending: 'Sending…', done: 'Your request has been recorded.', receipt: 'The MaisonÀVendre team will use the contact details you provided to follow up. No account has been created.', browse: 'Continue to properties', home: 'Back to home', error: 'Your request could not be sent. Your entries are still here; please try again later.', range: 'The maximum budget must be greater than or equal to the minimum.', unavailable: 'This form is not connected yet. Your request has not been recorded.', rate: 'Too many attempts. Please try again later.' },
@@ -18,6 +19,8 @@ const sellingCopy = {
 export function EnquiryForm({ kind, lang, onContinue }: { kind: 'buyer' | 'seller'; lang: Language; onContinue?: () => void }) {
   const t = copy[lang];
   const selling = sellingCopy[lang];
+  const options = enquiryOptions[lang];
+  const [assistance, setAssistance] = useState<string[]>([]);
   const [service, setService] = useState<'broker' | 'hybrid' | null>(null);
   const [choosing, setChoosing] = useState(kind === 'seller');
   const intakeEnabled = backendConfigured && import.meta.env.VITE_ENQUIRY_ENABLED === 'true';
@@ -28,11 +31,13 @@ export function EnquiryForm({ kind, lang, onContinue }: { kind: 'buyer' | 'selle
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy.current || (kind === 'seller' && (!service || choosing))) return;
-    const values = Object.fromEntries(new FormData(event.currentTarget));
+    const formData = new FormData(event.currentTarget);
+    formData.delete('assistanceChoice');
+    const values = Object.fromEntries(formData);
     if (!String(values.name).trim()) { setError('error'); return; }
     if (values.budgetMin && values.budgetMax && Number(values.budgetMin) > Number(values.budgetMax)) { setError('range'); return; }
     if (!intakeEnabled) { setError('unavailable'); return; }
-    const body = JSON.stringify({ ...values, kind, language: lang, service: kind === 'seller' ? service : '' });
+    const body = JSON.stringify({ ...values, kind, language: lang, service: kind === 'seller' ? service : '', assistance: kind === 'seller' && service === 'hybrid' ? assistance.join(',') : '' });
     if (body !== attempt.current.body) attempt.current = { body, id: crypto.randomUUID() };
     busy.current = true; setState('sending'); setError(null);
     try {
@@ -61,7 +66,9 @@ export function EnquiryForm({ kind, lang, onContinue }: { kind: 'buyer' | 'selle
             <span>{mode === 'broker' ? selling.brokerText : selling.hybridText}</span>
             <span className="selling-option-cta">{selling.choose} →</span>
           </button>)}
-        </div><p className="enquiry-privacy">{selling.note}</p>
+        </div>
+        <div className="selling-comparison"><table><caption>{options.compare}</caption><thead><tr><th scope="col">{options.task}</th><th scope="col">{options.broker}</th><th scope="col">{options.hybrid}</th></tr></thead><tbody>{options.rows.map(([task, broker, hybrid]) => <tr key={task}><th scope="row">{task}</th><td>{broker}</td><td>{hybrid}</td></tr>)}</tbody></table></div>
+        <p className="enquiry-privacy">{selling.note}</p>
       </> : <><p>{t.intro}</p><p>{t.required}</p></>}
       {kind === 'seller' && !choosing && service && <div className="selling-selection"><div><span>{selling.selected}</span><strong>{selling[service]}</strong></div><button type="button" disabled={state === 'sending'} onClick={() => setChoosing(true)}>{selling.change}</button></div>}
       {!intakeEnabled && <p className="enquiry-preview" role="status">{{en:'Form preview · collection and email summaries will be enabled after setup.',fr:'Aperçu du formulaire · la collecte et les récapitulatifs par courriel seront activés après configuration.',zh:'表单预览 · 资料收集和邮件汇总将在配置完成后启用。'}[lang]}</p>}
@@ -78,6 +85,12 @@ export function EnquiryForm({ kind, lang, onContinue }: { kind: 'buyer' | 'selle
           <label>{t.timing}<input name="timeline" maxLength={200} /></label>
           <label className="enquiry-full">{t.needs}<textarea name="requirements" rows={4} maxLength={3000} /></label>
         </div></fieldset>
+        {kind === 'seller' && service === 'hybrid' && <fieldset disabled={state === 'sending'}><legend>{options.assistance}</legend><p className="enquiry-privacy">{options.hint}</p><div className="enquiry-services">{assistanceIds.map((id, index) => <label key={id}><input type="checkbox" name="assistanceChoice" value={id} checked={assistance.includes(id)} onChange={event => setAssistance(current => event.target.checked ? id === 'unsure' ? ['unsure'] : [...current.filter(value => value !== 'unsure'), id] : current.filter(value => value !== id))} /><span>{options.services[index]}</span></label>)}</div></fieldset>}
+        <fieldset disabled={state === 'sending'}><legend>{options.contact}</legend><div className="enquiry-grid">
+          <label>{options.language}<select name="contactLanguage"><option value="">{options.none}</option><option value="en">English</option><option value="fr">Français</option><option value="zh">中文</option></select></label>
+          <label>{options.method}<select name="contactMethod"><option value="">{options.none}</option><option value="email">{options.email}</option><option value="phone">{options.phone}</option></select></label>
+          <label className="enquiry-full">{options.availability}<input name="contactTime" maxLength={200} placeholder={options.timeHint} /></label>
+        </div><p className="enquiry-privacy">{options.phoneHint}</p></fieldset>
         <div className="enquiry-trap" aria-hidden="true"><label>Website<input name="website" tabIndex={-1} autoComplete="off" /></label></div>
         <p className="enquiry-privacy">{t.privacy}</p>
         {error && <p role="alert">{t[error]}</p>}

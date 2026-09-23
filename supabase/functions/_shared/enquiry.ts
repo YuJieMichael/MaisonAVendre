@@ -3,7 +3,7 @@ export type Enquiry = Record<string, string> & { requestId: string; kind: string
 export function parseEnquiry(value: unknown): Enquiry {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw Error('invalid');
   const input = value as Record<string, unknown>;
-  const limits: Record<string, number> = {requestId:36,kind:6,language:2,name:120,email:254,phone:40,city:200,address:300,propertyType:10,budgetMin:10,budgetMax:10,expectedPrice:10,timeline:200,service:6,requirements:3000,website:200};
+  const limits: Record<string, number> = {requestId:36,kind:6,language:2,name:120,email:254,phone:40,city:200,address:300,propertyType:10,budgetMin:10,budgetMax:10,expectedPrice:10,timeline:200,service:6,assistance:100,contactLanguage:2,contactMethod:5,contactTime:200,requirements:3000,website:200};
   const result: Record<string,string> = {};
   for (const [key,max] of Object.entries(limits)) {
     const v = input[key] ?? '';
@@ -17,12 +17,17 @@ export function parseEnquiry(value: unknown): Enquiry {
   if (!['','house','condo','plex','commercial'].includes(result.propertyType) || !['','hybrid','broker'].includes(result.service)) throw Error('invalid');
   if (result.kind === 'buyer') { result.address=''; result.expectedPrice=''; result.service=''; }
   else { if (!['broker','hybrid'].includes(result.service)) throw Error('invalid'); result.budgetMin=''; result.budgetMax=''; }
+  if (!['','en','fr','zh'].includes(result.contactLanguage) || !['','email','phone'].includes(result.contactMethod)) throw Error('invalid');
+  const requested = result.assistance ? result.assistance.split(',') : [];
+  const allowed = ['photos','video','listing','pricing','visits','offers','unsure'];
+  if (requested.some(id => !allowed.includes(id)) || new Set(requested).size !== requested.length || (requested.includes('unsure') && requested.length > 1)) throw Error('invalid');
+  result.assistance = result.kind === 'seller' && result.service === 'hybrid' ? allowed.filter(id => requested.includes(id)).join(',') : '';
   delete result.website;
   return result as Enquiry;
 }
 
 export function enquiriesCsv(rows: Record<string, unknown>[]): string {
-  const columns = ['created_at','kind','name','email','phone','city','address','propertyType','budgetMin','budgetMax','expectedPrice','requirements','timeline','service','language'];
+  const columns = ['created_at','kind','name','email','phone','city','address','propertyType','budgetMin','budgetMax','expectedPrice','requirements','timeline','service','assistance','contactLanguage','contactMethod','contactTime','language'];
   const cell = (v: unknown) => {
     let text = String(v ?? '');
     // Prevent spreadsheet formula execution, including leading whitespace/control characters.
