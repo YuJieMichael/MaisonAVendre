@@ -7,9 +7,10 @@ import { parseEnquiry, enquiriesCsv } from '../supabase/functions/_shared/enquir
 vi.mock('../src/lib/supabase',()=>({backendConfigured:true}));
 let root: ReturnType<typeof createRoot>;
 afterEach(async()=>{if(root)await act(async()=>root.unmount());document.body.innerHTML='';vi.unstubAllEnvs();vi.unstubAllGlobals();});
-async function render(kind:'buyer'|'seller'){
+async function render(kind:'buyer'|'seller', choose = true){
   document.body.innerHTML='<div id="test"></div>';root=createRoot(document.getElementById('test')!);
   await act(async()=>root.render(<EnquiryForm kind={kind} lang="en" />));
+  if (kind === 'seller' && choose) await act(async()=>document.querySelector<HTMLButtonElement>('.selling-option')!.click());
   return document.querySelector('form')!;
 }
 it.each(['buyer','seller'] as const)('%s only requires name and email',async kind=>{
@@ -42,4 +43,23 @@ it('validates public payloads, permits blank optional fields, rejects malformed 
 it('exports Unicode CSV without executable spreadsheet formulas',()=>{
   const csv=enquiriesCsv([{name:'李, "Test"',requirements:'=HYPERLINK("bad")',phone:'+15145550000'}]);
   expect(csv.startsWith('\uFEFF')).toBe(true);expect(csv).toContain('李, ""Test""');expect(csv).toContain("'=HYPERLINK");expect(csv).toContain("'+15145550000");
+});
+
+it('offers exactly two selling paths, preserves contact entries when changing and submits the selected mode',async()=>{
+  vi.stubEnv('VITE_ENQUIRY_ENABLED','true');const send=vi.fn().mockResolvedValue({ok:true,status:200,json:async()=>({ok:true})});vi.stubGlobal('fetch',send);
+  const form=await render('seller',false);
+  expect(form.hidden).toBe(true);expect(document.querySelectorAll('.selling-option')).toHaveLength(2);
+  await act(async()=>document.querySelector<HTMLButtonElement>('.selling-option')!.click());
+  expect(form.hidden).toBe(false);
+  (form.elements.namedItem('name') as HTMLInputElement).value='Seller';(form.elements.namedItem('email') as HTMLInputElement).value='seller@example.com';
+  await act(async()=>document.querySelector<HTMLButtonElement>('.selling-selection button')!.click());
+  await act(async()=>document.querySelectorAll<HTMLButtonElement>('.selling-option')[1].click());
+  expect((form.elements.namedItem('name') as HTMLInputElement).value).toBe('Seller');
+  await act(async()=>form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})));
+  expect(JSON.parse(send.mock.calls[0][1].body).service).toBe('hybrid');
+});
+it('requires a supported selling mode in server validation',()=>{
+  const payload={requestId:crypto.randomUUID(),kind:'seller',language:'fr',name:'Seller',email:'seller@example.com'};
+  for (const service of ['broker','hybrid']) expect(parseEnquiry({...payload,service}).service).toBe(service);
+  for (const service of ['','self','staff']) expect(()=>parseEnquiry({...payload,service})).toThrow();
 });

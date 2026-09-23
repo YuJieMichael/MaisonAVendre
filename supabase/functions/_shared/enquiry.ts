@@ -14,9 +14,9 @@ export function parseEnquiry(value: unknown): Enquiry {
   if (!result.name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(result.email) || result.website) throw Error('invalid');
   for (const key of ['budgetMin','budgetMax','expectedPrice']) if (result[key] && (!/^\d+$/.test(result[key]) || Number(result[key]) > 1000000000)) throw Error('invalid');
   if (result.budgetMin && result.budgetMax && Number(result.budgetMin)>Number(result.budgetMax)) throw Error('invalid');
-  if (!['','house','condo','plex','commercial'].includes(result.propertyType) || !['','self','broker'].includes(result.service)) throw Error('invalid');
+  if (!['','house','condo','plex','commercial'].includes(result.propertyType) || !['','hybrid','broker'].includes(result.service)) throw Error('invalid');
   if (result.kind === 'buyer') { result.address=''; result.expectedPrice=''; result.service=''; }
-  else { result.budgetMin=''; result.budgetMax=''; }
+  else { if (!['broker','hybrid'].includes(result.service)) throw Error('invalid'); result.budgetMin=''; result.budgetMax=''; }
   delete result.website;
   return result as Enquiry;
 }

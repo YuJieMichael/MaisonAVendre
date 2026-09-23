@@ -9,8 +9,17 @@ const copy = {
   zh: { buy: '告诉我们您的购房需求', sell: '告诉我们您的卖房计划', intro: '无需注册或登录。资料会保存并定期汇总给 MaisonÀVendre 团队，方便我们与您联系。', basic: '基本联系信息', optional: '房产需求 · 选填', required: '* 为必填项，其余内容均可不填。', name: '姓名', email: '邮箱', phone: '电话', city: '想购买的城市 / 社区', sellerCity: '房屋所在城市', min: '最低预算（加元）', max: '最高预算（加元）', price: '期望售价（加元）', address: '房屋地址', type: '房屋类型', types: ['暂未确定', '独立屋', '公寓', '多户住宅', '商业地产'], needs: '具体要求 / 补充信息', timing: '计划时间', mode: '希望获得的服务', modes: ['暂未确定', '自行出售 / 按需购买服务', '经纪服务'], privacy: '点击发送即表示您请 MaisonÀVendre 保存这些资料并纳入内部邮件汇总，并就本次需求与您联系。不会因此订阅营销邮件。请勿填写财务文件或其他敏感信息。', submit: '发送需求', sending: '正在发送…', done: '您的需求已收录。', receipt: 'MaisonÀVendre 团队将使用您填写的联系方式跟进。本次提交不会创建账户。', browse: '继续浏览房源', home: '返回首页', error: '暂时无法发送，填写的内容仍保留在表单中，请稍后重试。', range: '最高预算不能低于最低预算。', unavailable: '表单收集服务尚未开通，您的需求尚未保存。', rate: '提交次数过多，请稍后重试。' },
 };
 
+const sellingCopy = {
+  en: { title: 'How would you like to sell?', intro: 'Choose how you would like to work with a broker, then tell us about your property. No account needed.', broker: 'Sell with a broker', brokerText: 'Let a broker guide the sale and coordinate the next steps with you.', hybrid: 'Sell yourself + with a broker', hybridText: 'Stay involved in selling your home, with broker support at the stages you choose together.', choose: 'Choose this option', selected: 'Your selling approach', change: 'Change approach', note: 'The scope of support and fees will be agreed with you before any commitment.' },
+  fr: { title: 'Comment souhaitez-vous vendre ?', intro: 'Choisissez votre façon de collaborer avec un courtier, puis présentez votre propriété. Aucun compte nécessaire.', broker: 'Vendre avec un courtier', brokerText: 'Confiez le suivi de la vente à un courtier qui coordonne les prochaines étapes avec vous.', hybrid: 'Vendre vous-même + avec un courtier', hybridText: 'Participez à la vente de votre propriété, avec l’accompagnement d’un courtier aux étapes définies ensemble.', choose: 'Choisir cette option', selected: 'Votre mode de vente', change: 'Changer de mode', note: 'L’accompagnement et les frais seront convenus avec vous avant tout engagement.' },
+  zh: { title: '您希望怎样卖房？', intro: '先选择卖房方式，再填写房屋和联系信息。无需注册或登录。', broker: '经纪卖', brokerText: '由经纪主导卖房流程，与您沟通并协调后续事项。', hybrid: '自己 + 经纪卖', hybridText: '您自己参与卖房，经纪按双方约定的分工提供专业协助。', choose: '选择此方式', selected: '已选卖房方式', change: '更改方式', note: '具体服务范围和费用会在确认合作前与您商定。' },
+};
+
 export function EnquiryForm({ kind, lang, onContinue }: { kind: 'buyer' | 'seller'; lang: Language; onContinue?: () => void }) {
   const t = copy[lang];
+  const selling = sellingCopy[lang];
+  const [service, setService] = useState<'broker' | 'hybrid' | null>(null);
+  const [choosing, setChoosing] = useState(kind === 'seller');
   const intakeEnabled = backendConfigured && import.meta.env.VITE_ENQUIRY_ENABLED === 'true';
   const [state, setState] = useState<'idle' | 'sending' | 'done'>('idle');
   const [error, setError] = useState<keyof Pick<typeof t, 'error' | 'range' | 'unavailable' | 'rate'> | null>(null);
@@ -18,12 +27,12 @@ export function EnquiryForm({ kind, lang, onContinue }: { kind: 'buyer' | 'selle
   const busy = useRef(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy.current) return;
+    if (busy.current || (kind === 'seller' && (!service || choosing))) return;
     const values = Object.fromEntries(new FormData(event.currentTarget));
     if (!String(values.name).trim()) { setError('error'); return; }
     if (values.budgetMin && values.budgetMax && Number(values.budgetMin) > Number(values.budgetMax)) { setError('range'); return; }
     if (!intakeEnabled) { setError('unavailable'); return; }
-    const body = JSON.stringify({ ...values, kind, language: lang });
+    const body = JSON.stringify({ ...values, kind, language: lang, service: kind === 'seller' ? service : '' });
     if (body !== attempt.current.body) attempt.current = { body, id: crypto.randomUUID() };
     busy.current = true; setState('sending'); setError(null);
     try {
@@ -42,11 +51,21 @@ export function EnquiryForm({ kind, lang, onContinue }: { kind: 'buyer' | 'selle
   }
   return <section className="enquiry-shell">
     <p className="eyebrow">MaisonÀVendre · {kind === 'buyer' ? ({en:'Buy',fr:'Acheter',zh:'买房'}[lang]) : ({en:'Sell',fr:'Vendre',zh:'卖房'}[lang])}</p>
-    <h1>{kind === 'buyer' ? t.buy : t.sell}</h1>
+    <h1>{kind === 'buyer' ? t.buy : choosing ? selling.title : t.sell}</h1>
     {state === 'done' ? <div className="enquiry-card" role="status"><h2>{t.done}</h2><p>{t.receipt}</p>{onContinue && <button className="wide-cta" onClick={onContinue}>{t.browse}</button>}<a href="#top">{t.home}</a></div> : <>
-      <p>{t.intro}</p><p>{t.required}</p>
+      {kind === 'seller' && choosing ? <>
+        <p>{selling.intro}</p>
+        <div className="selling-options">
+          {(['broker', 'hybrid'] as const).map(mode => <button key={mode} type="button" className="selling-option" onClick={() => { setService(mode); setChoosing(false); setError(null); }}>
+            <span className="selling-option-title">{selling[mode]}</span>
+            <span>{mode === 'broker' ? selling.brokerText : selling.hybridText}</span>
+            <span className="selling-option-cta">{selling.choose} →</span>
+          </button>)}
+        </div><p className="enquiry-privacy">{selling.note}</p>
+      </> : <><p>{t.intro}</p><p>{t.required}</p></>}
+      {kind === 'seller' && !choosing && service && <div className="selling-selection"><div><span>{selling.selected}</span><strong>{selling[service]}</strong></div><button type="button" disabled={state === 'sending'} onClick={() => setChoosing(true)}>{selling.change}</button></div>}
       {!intakeEnabled && <p className="enquiry-preview" role="status">{{en:'Form preview · collection and email summaries will be enabled after setup.',fr:'Aperçu du formulaire · la collecte et les récapitulatifs par courriel seront activés après configuration.',zh:'表单预览 · 资料收集和邮件汇总将在配置完成后启用。'}[lang]}</p>}
-      <form className="enquiry-card" onSubmit={submit}>
+      <form className="enquiry-card" onSubmit={submit} hidden={choosing}>
         <fieldset disabled={state === 'sending'}><legend>{t.basic}</legend><div className="enquiry-grid">
           <label>{t.name} *<input name="name" required maxLength={120} autoComplete="name" /></label>
           <label>{t.email} *<input name="email" required type="email" maxLength={254} autoComplete="email" /></label>
@@ -55,7 +74,7 @@ export function EnquiryForm({ kind, lang, onContinue }: { kind: 'buyer' | 'selle
         <fieldset disabled={state === 'sending'}><legend>{t.optional}</legend><div className="enquiry-grid">
           <label>{kind === 'buyer' ? t.city : t.sellerCity}<input name="city" maxLength={200} /></label>
           <label>{t.type}<select name="propertyType">{['','house','condo','plex','commercial'].map((v,i)=><option key={v} value={v}>{t.types[i]}</option>)}</select></label>
-          {kind === 'buyer' ? <><label>{t.min}<input name="budgetMin" type="number" min="0" max="1000000000" step="1" /></label><label>{t.max}<input name="budgetMax" type="number" min="0" max="1000000000" step="1" /></label></> : <><label>{t.address}<input name="address" maxLength={300} autoComplete="street-address" /></label><label>{t.price}<input name="expectedPrice" type="number" min="0" max="1000000000" step="1" /></label><label>{t.mode}<select name="service">{['','self','broker'].map((v,i)=><option key={v} value={v}>{t.modes[i]}</option>)}</select></label></>}
+          {kind === 'buyer' ? <><label>{t.min}<input name="budgetMin" type="number" min="0" max="1000000000" step="1" /></label><label>{t.max}<input name="budgetMax" type="number" min="0" max="1000000000" step="1" /></label></> : <><label>{t.address}<input name="address" maxLength={300} autoComplete="street-address" /></label><label>{t.price}<input name="expectedPrice" type="number" min="0" max="1000000000" step="1" /></label></>}
           <label>{t.timing}<input name="timeline" maxLength={200} /></label>
           <label className="enquiry-full">{t.needs}<textarea name="requirements" rows={4} maxLength={3000} /></label>
         </div></fieldset>
