@@ -200,4 +200,21 @@ describe("authentication boundaries", () => {
     expect(state.user).toBeNull();
     expect(state.callbackError).toBe("Invalid token");
   });
+
+  it("offers safe recovery after a missing PKCE verifier without granting access or showing SDK internals", async () => {
+    mock.exchange.mockResolvedValue({ data: { session: null }, error: { message: "PKCE code verifier not found in storage. Use @supabase/ssr." } });
+    window.history.replaceState(null, "", "/?code=missing-verifier-test#auth/callback");
+    await render(<AuthPage lang="zh" />, true);
+    expect(window.location.search).toBe("");
+    expect(state.user).toBeNull();
+    expect(state.recoverySession).toBe(false);
+    expect(state.invitationSession).toBe(false);
+    expect(container.textContent).toContain("链接登录未完成");
+    expect(container.textContent).toContain("同一个浏览器");
+    expect(container.textContent).not.toContain("PKCE");
+    expect(container.textContent).not.toContain("@supabase/ssr");
+    expect(container.querySelector('a[href="#login"]')).not.toBeNull();
+    expect(container.querySelector('a[href="#forgot-password"]')).not.toBeNull();
+    expect(container.querySelector('input[type="password"]')).toBeNull();
+  });
 });
