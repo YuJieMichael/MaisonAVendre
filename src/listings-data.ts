@@ -15,6 +15,10 @@ export type Listing = {
   parking: boolean;
   outdoor: boolean;
   image: string;
+  real?: boolean;
+  photos?: string[];
+  description?: string;
+  neighbourhood?: string;
 };
 
 // Fictional catalogue, isolated from private seller projects. Stock photos are illustrative.

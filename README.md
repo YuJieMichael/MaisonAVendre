@@ -116,3 +116,5 @@ docs/                Backend deployment and administrator setup
 The linked GitHub repository initially contained only a README, and the original hosted site's source could not be retrieved. Homepage text, site-specific CSS, hero image and favicon were recovered from public files on the owner-supplied `https://maisonavendre.xieyujieee.chatgpt.site/`. React components, seller behavior and the dashboard were reconstructed as maintainable source. Original compiled framework bundles are not included. Original backend code and data have not been recovered.
 
 Icons are provided by `lucide-react` under its ISC licence. Dependency licences remain applicable. This reconstruction assigns no additional open-source licence to the owner's site content or images.
+
+Property publication / Publication des propriétés / 房源发布：The independent catalogue is available at `#proprietes`; sellers prepare and preview a listing at `#publier`. Reviewed publication source and activation steps are documented in [property publication](docs/property-publication.md). Public submission is disabled until backend and staff setup are complete.
