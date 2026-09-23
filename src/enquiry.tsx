@@ -1,0 +1,69 @@
+import { useRef, useState, type FormEvent } from 'react';
+import type { Language } from './seller-copy';
+import { backendConfigured } from './lib/supabase';
+import './enquiry.css';
+
+const copy = {
+  en: { buy: 'Tell us about your home search', sell: 'Tell us about your property', intro: 'No account needed. Send your details to the MaisonÀVendre team so we can follow up on your request.', basic: 'Your contact details', optional: 'Your project · optional', required: '* Required fields. All other fields are optional.', name: 'Full name', email: 'Email', phone: 'Phone', city: 'Preferred cities / neighbourhoods', sellerCity: 'Property city', min: 'Minimum budget (CAD)', max: 'Maximum budget (CAD)', price: 'Expected price (CAD)', address: 'Property address', type: 'Property type', types: ['Not specified', 'House', 'Condo', 'Plex', 'Commercial'], needs: 'Requirements / additional information', timing: 'Preferred timeline', mode: 'Preferred support', modes: ['Undecided', 'Self-sale / optional services', 'With a broker'], privacy: 'By sending this form, you ask MaisonÀVendre to store your details and include them in a private email summary and contact you about this request. This does not subscribe you to marketing messages. Please do not include financial documents or other sensitive information.', submit: 'Send my request', sending: 'Sending…', done: 'Your request has been recorded.', receipt: 'The MaisonÀVendre team will use the contact details you provided to follow up. No account has been created.', browse: 'Continue to properties', home: 'Back to home', error: 'Your request could not be sent. Your entries are still here; please try again later.', range: 'The maximum budget must be greater than or equal to the minimum.', unavailable: 'This form is not connected yet. Your request has not been recorded.', rate: 'Too many attempts. Please try again later.' },
+  fr: { buy: 'Parlez-nous de votre recherche', sell: 'Parlez-nous de votre propriété', intro: 'Aucun compte nécessaire. Transmettez vos coordonnées à l’équipe MaisonÀVendre pour le suivi de votre demande.', basic: 'Vos coordonnées', optional: 'Votre projet · facultatif', required: '* Champs obligatoires. Tous les autres champs sont facultatifs.', name: 'Nom complet', email: 'Courriel', phone: 'Téléphone', city: 'Villes / quartiers recherchés', sellerCity: 'Ville de la propriété', min: 'Budget minimum (CAD)', max: 'Budget maximum (CAD)', price: 'Prix souhaité (CAD)', address: 'Adresse de la propriété', type: 'Type de propriété', types: ['Non précisé', 'Maison', 'Condo', 'Plex', 'Commercial'], needs: 'Critères / renseignements complémentaires', timing: 'Échéancier souhaité', mode: 'Accompagnement souhaité', modes: ['À déterminer', 'Vente autonome / services à la carte', 'Avec courtier'], privacy: 'En envoyant ce formulaire, vous demandez à MaisonÀVendre de conserver vos renseignements et de les inclure dans un récapitulatif privé par courriel et de vous contacter au sujet de cette demande. Aucun abonnement publicitaire. Ne joignez pas de documents financiers ou de renseignements sensibles.', submit: 'Envoyer ma demande', sending: 'Envoi…', done: 'Votre demande a été enregistrée.', receipt: 'L’équipe MaisonÀVendre utilisera les coordonnées fournies pour vous recontacter. Aucun compte n’a été créé.', browse: 'Continuer vers les propriétés', home: 'Retour à l’accueil', error: 'Envoi impossible. Vos renseignements sont conservés dans ce formulaire; veuillez réessayer plus tard.', range: 'Le budget maximum doit être supérieur ou égal au minimum.', unavailable: 'Ce formulaire n’est pas encore connecté. Votre demande n’a pas été enregistrée.', rate: 'Trop de tentatives. Veuillez réessayer plus tard.' },
+  zh: { buy: '告诉我们您的购房需求', sell: '告诉我们您的卖房计划', intro: '无需注册或登录。资料会保存并定期汇总给 MaisonÀVendre 团队，方便我们与您联系。', basic: '基本联系信息', optional: '房产需求 · 选填', required: '* 为必填项，其余内容均可不填。', name: '姓名', email: '邮箱', phone: '电话', city: '想购买的城市 / 社区', sellerCity: '房屋所在城市', min: '最低预算（加元）', max: '最高预算（加元）', price: '期望售价（加元）', address: '房屋地址', type: '房屋类型', types: ['暂未确定', '独立屋', '公寓', '多户住宅', '商业地产'], needs: '具体要求 / 补充信息', timing: '计划时间', mode: '希望获得的服务', modes: ['暂未确定', '自行出售 / 按需购买服务', '经纪服务'], privacy: '点击发送即表示您请 MaisonÀVendre 保存这些资料并纳入内部邮件汇总，并就本次需求与您联系。不会因此订阅营销邮件。请勿填写财务文件或其他敏感信息。', submit: '发送需求', sending: '正在发送…', done: '您的需求已收录。', receipt: 'MaisonÀVendre 团队将使用您填写的联系方式跟进。本次提交不会创建账户。', browse: '继续浏览房源', home: '返回首页', error: '暂时无法发送，填写的内容仍保留在表单中，请稍后重试。', range: '最高预算不能低于最低预算。', unavailable: '表单收集服务尚未开通，您的需求尚未保存。', rate: '提交次数过多，请稍后重试。' },
+};
+
+export function EnquiryForm({ kind, lang, onContinue }: { kind: 'buyer' | 'seller'; lang: Language; onContinue?: () => void }) {
+  const t = copy[lang];
+  const intakeEnabled = backendConfigured && import.meta.env.VITE_ENQUIRY_ENABLED === 'true';
+  const [state, setState] = useState<'idle' | 'sending' | 'done'>('idle');
+  const [error, setError] = useState<keyof Pick<typeof t, 'error' | 'range' | 'unavailable' | 'rate'> | null>(null);
+  const attempt = useRef({ body: '', id: '' });
+  const busy = useRef(false);
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busy.current) return;
+    const values = Object.fromEntries(new FormData(event.currentTarget));
+    if (!String(values.name).trim()) { setError('error'); return; }
+    if (values.budgetMin && values.budgetMax && Number(values.budgetMin) > Number(values.budgetMax)) { setError('range'); return; }
+    if (!intakeEnabled) { setError('unavailable'); return; }
+    const body = JSON.stringify({ ...values, kind, language: lang });
+    if (body !== attempt.current.body) attempt.current = { body, id: crypto.randomUUID() };
+    busy.current = true; setState('sending'); setError(null);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-enquiry`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+        body: JSON.stringify({ ...JSON.parse(body), requestId: attempt.current.id }), signal: AbortSignal.timeout(20000),
+      });
+      const result = await response.json();
+      if (!response.ok || result.ok !== true) {
+        setError(response.status === 429 ? 'rate' : [404, 503].includes(response.status) ? 'unavailable' : 'error');
+        setState('idle'); return;
+      }
+      setState('done');
+    } catch { setError('error'); setState('idle'); }
+    finally { busy.current = false; }
+  }
+  return <section className="enquiry-shell">
+    <p className="eyebrow">MaisonÀVendre · {kind === 'buyer' ? ({en:'Buy',fr:'Acheter',zh:'买房'}[lang]) : ({en:'Sell',fr:'Vendre',zh:'卖房'}[lang])}</p>
+    <h1>{kind === 'buyer' ? t.buy : t.sell}</h1>
+    {state === 'done' ? <div className="enquiry-card" role="status"><h2>{t.done}</h2><p>{t.receipt}</p>{onContinue && <button className="wide-cta" onClick={onContinue}>{t.browse}</button>}<a href="#top">{t.home}</a></div> : <>
+      <p>{t.intro}</p><p>{t.required}</p>
+      {!intakeEnabled && <p className="enquiry-preview" role="status">{{en:'Form preview · collection and email summaries will be enabled after setup.',fr:'Aperçu du formulaire · la collecte et les récapitulatifs par courriel seront activés après configuration.',zh:'表单预览 · 资料收集和邮件汇总将在配置完成后启用。'}[lang]}</p>}
+      <form className="enquiry-card" onSubmit={submit}>
+        <fieldset disabled={state === 'sending'}><legend>{t.basic}</legend><div className="enquiry-grid">
+          <label>{t.name} *<input name="name" required maxLength={120} autoComplete="name" /></label>
+          <label>{t.email} *<input name="email" required type="email" maxLength={254} autoComplete="email" /></label>
+          <label>{t.phone}<input name="phone" type="tel" maxLength={40} autoComplete="tel" /></label>
+        </div></fieldset>
+        <fieldset disabled={state === 'sending'}><legend>{t.optional}</legend><div className="enquiry-grid">
+          <label>{kind === 'buyer' ? t.city : t.sellerCity}<input name="city" maxLength={200} /></label>
+          <label>{t.type}<select name="propertyType">{['','house','condo','plex','commercial'].map((v,i)=><option key={v} value={v}>{t.types[i]}</option>)}</select></label>
+          {kind === 'buyer' ? <><label>{t.min}<input name="budgetMin" type="number" min="0" max="1000000000" step="1" /></label><label>{t.max}<input name="budgetMax" type="number" min="0" max="1000000000" step="1" /></label></> : <><label>{t.address}<input name="address" maxLength={300} autoComplete="street-address" /></label><label>{t.price}<input name="expectedPrice" type="number" min="0" max="1000000000" step="1" /></label><label>{t.mode}<select name="service">{['','self','broker'].map((v,i)=><option key={v} value={v}>{t.modes[i]}</option>)}</select></label></>}
+          <label>{t.timing}<input name="timeline" maxLength={200} /></label>
+          <label className="enquiry-full">{t.needs}<textarea name="requirements" rows={4} maxLength={3000} /></label>
+        </div></fieldset>
+        <div className="enquiry-trap" aria-hidden="true"><label>Website<input name="website" tabIndex={-1} autoComplete="off" /></label></div>
+        <p className="enquiry-privacy">{t.privacy}</p>
+        {error && <p role="alert">{t[error]}</p>}
+        <button className="wide-cta" type="submit" disabled={state === 'sending'}>{state === 'sending' ? t.sending : t.submit}</button>
+      </form>
+    </>}
+  </section>;
+}

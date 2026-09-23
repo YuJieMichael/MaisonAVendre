@@ -52,3 +52,11 @@ verify_enabled = true
 # getClaims + getUser inside the function verify the caller explicitly and
 # support asymmetric JWT signing keys. Never remove those checks.
 verify_jwt = false
+
+[functions.submit-enquiry]
+# Public intake: validated body, origin check and database rate limits.
+verify_jwt = false
+
+[functions.send-enquiry-batches]
+# Private scheduled worker: requires ENQUIRY_CRON_TOKEN, never a browser key.
+verify_jwt = false
