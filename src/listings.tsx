@@ -50,15 +50,22 @@ function DemoNotice({ lang }: { lang: Language }) {
 
 export function FeaturedProperties({ lang }: { lang: Language }) {
   const c = listingsCopy[lang];
+  const live = usePublicListings();
+  const items = publicListingsEnabled ? live.items : listings;
+  const pub = publicationCopy[lang];
   return <section className="featured-properties section" id="proprietes">
     <div className="section-heading"><div><p className="eyebrow">{c.eyebrow}</p><h2>{c.browseTitle}</h2><p>{c.browseText}</p></div><a href="#proprietes" className="listing-text-link">{c.viewAll}<ArrowRight aria-hidden="true" /></a></div>
-    <DemoNotice lang={lang} /><div className="property-grid">{listings.slice(0, 3).map(item => <PropertyCard key={item.id} item={item} lang={lang} />)}</div>
+    {!publicListingsEnabled && <DemoNotice lang={lang} />}
+    {live.loading && <p role="status">{pub.loading}</p>}
+    {live.error && <p role="alert">{pub.actionError}</p>}
+    {publicListingsEnabled && !live.loading && !live.error && !items.length && <p>{pub.noPublic}</p>}
+    <div className="property-grid">{items.slice(0, 3).map(item => <PropertyCard key={item.id} item={item} lang={lang} />)}</div>
   </section>;
 }
 
 export function ListingsPage({ lang, hash }: { lang: Language; hash: string }) {
   const live = usePublicListings();
-  const catalogueItems = [...live.items, ...listings];
+  const catalogueItems = publicListingsEnabled ? live.items : listings;
   const pub = publicationCopy[lang];
   const c = listingsCopy[lang];
   const [filters, setFilters] = useState<Filters>(() => readFilters(location.hash));
@@ -134,11 +141,11 @@ export function ListingsPage({ lang, hash }: { lang: Language; hash: string }) {
       {invalid && <p className="filter-error" id="price-range-error" role="alert">{c.rangeError}</p>}
     </form>
     {active.length > 0 && <div className="filter-chips" aria-label={c.active}>{active.map(key => <button key={key} type="button" aria-label={`${c.remove}: ${chip(key)}`} onClick={() => change({ [key]: defaultFilters[key] })}>{chip(key)}<X aria-hidden="true" /></button>)}<button type="button" className="clear-filters" onClick={reset}>{c.reset}</button></div>}
-    <div className="results-toolbar"><div className="result-count" role="status"><strong>{filtered.length} {filtered.length === 1 ? c.result : c.results}</strong><span>{live.items.length ? pub.listings : c.countNote}</span></div><div className="results-controls"><label>{c.sort}<select value={filters.sort} onChange={event => change({ sort: event.target.value as Filters["sort"] })}>{Object.entries(c.sorts).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label><div className="view-toggle"><button type="button" aria-label={c.grid} aria-pressed={view === "grid"} onClick={() => setView("grid")}><LayoutGrid aria-hidden="true" /></button><button type="button" aria-label={c.list} aria-pressed={view === "list"} onClick={() => setView("list")}><List aria-hidden="true" /></button></div></div></div>
+    <div className="results-toolbar"><div className="result-count" role="status"><strong>{filtered.length} {filtered.length === 1 ? c.result : c.results}</strong><span>{publicListingsEnabled ? pub.listings : c.countNote}</span></div><div className="results-controls"><label>{c.sort}<select value={filters.sort} onChange={event => change({ sort: event.target.value as Filters["sort"] })}>{Object.entries(c.sorts).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label><div className="view-toggle"><button type="button" aria-label={c.grid} aria-pressed={view === "grid"} onClick={() => setView("grid")}><LayoutGrid aria-hidden="true" /></button><button type="button" aria-label={c.list} aria-pressed={view === "list"} onClick={() => setView("list")}><List aria-hidden="true" /></button></div></div></div>
     {live.loading && <p role="status">{pub.loading}</p>}
     {live.error && <p role="alert">{pub.actionError}</p>}
     {publicListingsEnabled && !live.loading && !live.error && !live.items.length && <p>{pub.noPublic}</p>}
-    <DemoNotice lang={lang} />
+    {!publicListingsEnabled && <DemoNotice lang={lang} />}
     {filtered.length ? <div className={`property-grid ${view === "list" ? "property-list" : ""}`}>{filtered.map((item, index) => <PropertyCard key={item.id} item={item} lang={lang} query={query} eager={index < 3} />)}</div> : <div className="listing-empty"><Search aria-hidden="true" /><h2>{c.empty}</h2><p>{c.emptyHelp}</p><button type="button" onClick={reset}>{c.reset}</button></div>}
     <section className="catalogue-seller-banner"><div><h2>{c.sellerTitle}</h2><p>{c.sellerText}</p></div><a href="#publier" className="catalogue-cta">{pub.publish}<ArrowRight aria-hidden="true" /></a></section>
   </div></div>;

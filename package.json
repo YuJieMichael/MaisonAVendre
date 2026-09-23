@@ -10,7 +10,7 @@
     "test": "npm run test:ui && npm run test:database && npm run test:functions && npm run test:merge-count",
     "test:ui": "vitest run --configLoader native tests",
     "test:database": "node supabase/tests/run-database.mjs",
-    "test:functions": "node --test supabase/functions/_shared/invitation.test.ts",
+    "test:functions": "node --test supabase/functions/_shared/invitation.test.ts supabase/functions/_shared/staff-email.test.ts",
     "test:merge-count": "node --test .github/tests/merge-count.test.mjs"
   },
   "dependencies": {

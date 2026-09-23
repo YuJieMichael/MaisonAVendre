@@ -126,8 +126,7 @@ function App() {
           aria-label={notices[lang].nav}
         >
           {d.nav.map((n, i) => (
-            <a
-              key={i}
+            <React.Fragment key={i}><a
               href={
                 i === 0
                   ? "#acheter"
@@ -142,6 +141,8 @@ function App() {
             >
               {n}
             </a>
+            {i === 1 && <a href="#proprietes" onClick={() => setMenu(false)} aria-current={catalogue ? "page" : undefined}>{publicationCopy[lang].listings}</a>}
+            </React.Fragment>
           ))}
           <a
             className="mobile-workspace-link"
@@ -158,7 +159,6 @@ function App() {
           </a>
         </nav>
         <div className="header-actions">
-          <a className="publication-header-link" href="#proprietes" aria-current={catalogue ? "page" : undefined}>{publicationCopy[lang].listings}</a>
           <div className="language-switch" aria-label="Language">
             <Earth aria-hidden="true" />
             {(Object.keys(labels) as Language[]).map((l) => (

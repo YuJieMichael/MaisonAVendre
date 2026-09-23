@@ -15,7 +15,8 @@ import {
   LockKeyhole,
   ExternalLink,
 } from "lucide-react";
-import { useAuth, MfaPanel } from "./auth";
+import { useAuth } from "./auth";
+import { AdminEmailPanel } from "./admin-email";
 import { supabase } from "./lib/supabase";
 import type { Language } from "./seller-copy";
 import "./admin.css";
@@ -409,7 +410,7 @@ export function AdminPage({ lang }: { lang: Language }) {
   const [filesLoading, setFilesLoading] = useState(false);
   const fetchVersion = useRef(0);
   const fileVersion = useRef(0);
-  const canRead = !!auth.user && !!auth.staffRole && auth.aal === "aal2";
+  const canRead = !!auth.user && !!auth.staffRole && auth.adminVerified;
 
   const refresh = useCallback(async () => {
     if (!supabase || !canRead) return;
@@ -452,7 +453,7 @@ export function AdminPage({ lang }: { lang: Language }) {
     setSelected(null);
     setFiles([]);
     setMessage(null);
-  }, [auth.user?.id, auth.staffRole, auth.aal]);
+  }, [auth.user?.id, auth.staffRole, auth.adminVerified]);
 
   async function selectProject(project: ReviewProject) {
     if (!supabase || busy) return;
@@ -617,10 +618,10 @@ export function AdminPage({ lang }: { lang: Language }) {
     );
   if (!auth.user) return gate(t.loginTitle, t.loginText, true);
   if (!auth.staffRole) return gate(t.noAccess, t.noAccessText);
-  if (auth.aal !== "aal2")
+  if (!auth.adminVerified)
     return (
       <main className="admin-gate">
-        <MfaPanel lang={lang} onVerified={() => void auth.refreshAuth()} />
+        <AdminEmailPanel lang={lang} />
         <a href="#">{t.back}</a>
       </main>
     );

@@ -78,6 +78,7 @@ test("JSON body parser enforces size even without a Content-Length header", asyn
 });
 
 type Scenario = {
+  emailSession?: boolean;
   aal?: string;
   role?: string;
   active?: boolean;
@@ -115,6 +116,7 @@ function scenario(options: Scenario = {}) {
             claims: {
               sub: options.claimUser || "owner-id",
               aal: options.aal || "aal2",
+              session_id: "00000000-0000-4000-8000-000000000001",
             },
           },
           error: options.claimError ? new Error("bad signature") : null,
@@ -150,6 +152,7 @@ function scenario(options: Scenario = {}) {
     },
     rpc: async (...args: unknown[]) => {
       calls.push({ name: "rpc", args });
+      if (args[0] === 'check_staff_email_session') return {data:options.emailSession === true,error:null};
       return {
         error: options.assignmentError
           ? { code: "23505", message: "PRIVATE DATABASE ERROR" }
@@ -209,6 +212,15 @@ test("owner with verified MFA creates an operator and audit through the atomic R
   ]);
 });
 
+test('owner with a server-verified email session may invite; ordinary AAL1 may not',async()=>{
+  const {handler,calls}=scenario({aal:'aal1',emailSession:true});
+  assert.equal((await handler(request())).status,200);
+  assert.ok(calls.some(c=>c.name==='rpc' && c.args[0]==='check_staff_email_session'));
+  const denied=scenario({aal:'aal1',emailSession:false});
+  assert.equal((await denied.handler(request())).status,403);
+  assert.ok(!denied.calls.some(c=>c.name==='invite'));
+});
+
 for (const [label, options] of Object.entries({
   "operator role": { role: "operator" },
   "inactive owner": { active: false },
@@ -223,7 +235,7 @@ for (const [label, options] of Object.entries({
     const result = await handler(request());
     assert.ok([401, 403].includes(result.status));
     assert.equal(
-      calls.some((call) => ["invite", "rpc"].includes(call.name)),
+      calls.some((call) => call.name === 'invite' || (call.name === 'rpc' && call.args[0] === 'finish_staff_invite')),
       false,
     );
   });
