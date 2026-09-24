@@ -1,6 +1,7 @@
 import {createClient} from 'npm:@supabase/supabase-js@2.117.0';
 import {readSmallJson} from '../_shared/invitation.ts';
 import {parseListingInput} from '../_shared/listing-input.ts';
+import {parseVideo} from '../_shared/listing-video.ts';
 const digest=async(value:string)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value))),b=>b.toString(16).padStart(2,'0')).join('');
 Deno.serve(async request=>{
   let origin:string;
@@ -12,8 +13,8 @@ Deno.serve(async request=>{
   if(!allowed.includes(requestOrigin||''))return reply(403,{error:'forbidden'});
   if(request.method==='OPTIONS')return new Response(null,{status:204,headers});
   if(request.method!=='POST')return reply(405,{error:'method'});
-  let input:ReturnType<typeof parseListingInput>, fingerprint:string;
-  try{const body=await readSmallJson(request,9*1024*1024);input=parseListingInput(body);fingerprint=await digest(JSON.stringify(body));}
+  let input:ReturnType<typeof parseListingInput>, fingerprint:string,video:ReturnType<typeof parseVideo>;
+  try{const body=await readSmallJson(request,24*1024*1024);input=parseListingInput(body);video=parseVideo((body as Record<string,unknown>).video);if(video&&(body as Record<string,unknown>).videoConsent!==true)throw Error('consent');fingerprint=await digest(JSON.stringify(body));}
   catch{return reply(400,{error:'invalid'});}
   try{
     const secret=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -31,7 +32,12 @@ Deno.serve(async request=>{
       const uploaded=await db.storage.from('listing-photos').upload(paths[i],photo.bytes,{contentType:photo.mime,upsert:false});
       if(uploaded.error){const {data:existing,error}=await db.storage.from('listing-photos').download(paths[i]);if(error||!existing)throw Error('upload');const bytes=new Uint8Array(await existing.arrayBuffer());if(bytes.length!==photo.bytes.length||bytes.some((b,j)=>b!==photo.bytes[j]))throw Error('conflict');}
     }
-    const saved=await db.from('listing_submissions').update({status:'pending'}).eq('id',input.id).eq('status','uploading');
+    const videoPath=video?`${input.id}/video.${video.ext}`:null;
+    if(video && videoPath){
+      const uploaded=await db.storage.from('listing-videos').upload(videoPath,video.bytes,{contentType:video.mime,upsert:false});
+      if(uploaded.error){const {data:existing,error}=await db.storage.from('listing-videos').download(videoPath);if(error||!existing)throw Error('video_upload');const bytes=new Uint8Array(await existing.arrayBuffer());if(bytes.length!==video.bytes.length||bytes.some((b,j)=>b!==video.bytes[j]))throw Error('conflict');}
+    }
+    const saved=await db.from('listing_submissions').update({status:'pending',video_path:videoPath}).eq('id',input.id).eq('status','uploading');
     if(saved.error)throw saved.error;
     return reply(200,{ok:true});
   }catch{return reply(503,{error:'not_saved'});}

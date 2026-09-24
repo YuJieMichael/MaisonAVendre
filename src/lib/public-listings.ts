@@ -10,7 +10,7 @@ export function usePublicListings(){
     async function load(){
       if(!supabase||!publicListingsEnabled)return;
       try{
-        const result=await supabase.from('published_listings').select('id,property,photo_paths,published_at').order('published_at',{ascending:false}).limit(1000);
+        const result=await supabase.from('published_listings').select('id,property,photo_paths,video_path,published_at').order('published_at',{ascending:false}).limit(1000);
         if(result.error)throw result.error;
         const values=await Promise.all((result.data||[]).map(async row=>{
           const p=parseProperty(row.property);
@@ -19,7 +19,9 @@ export function usePublicListings(){
             if(signed.error)throw signed.error;
             return signed.data.signedUrl;
           }));
-          return {...p,id:row.id,district:p.title,neighbourhood:p.district,aliases:`${p.title} ${p.district} ${p.city}`,date:row.published_at.slice(0,10),image:photos[0]||listingFallback,photos,real:true} satisfies Listing;
+          let video:string|undefined;
+          if(row.video_path){const signed=await supabase!.storage.from('listing-videos').createSignedUrl(row.video_path,300);if(!signed.error)video=signed.data.signedUrl;}
+          return {...p,video,id:row.id,district:p.title,neighbourhood:p.district,aliases:`${p.title} ${p.district} ${p.city}`,date:row.published_at.slice(0,10),image:photos[0]||listingFallback,photos,real:true} satisfies Listing;
         }));
         if(active){setItems(values);setError(false);}
       }catch{if(active)setError(true);}finally{if(active)setLoading(false);}
