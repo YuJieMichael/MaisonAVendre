@@ -1,6 +1,6 @@
 export const listingsCopy = {
   en: {
-    eyebrow: "MONTRÉAL & SURROUNDING AREAS", title: "Find your next place.", intro: "A neighbourhood you love. A home that feels like you.",
+    eyebrow: "ACROSS QUÉBEC", title: "Find your next place.", intro: "A neighbourhood you love. A home that feels like you.",
     sell: "Sell my property", browse: "Browse properties", sample: "Preview catalogue", sampleNote: "Fictional properties and prices. Photos are illustrative; these homes are not offered for sale.",
     search: "City, neighbourhood or postal code", searchPlaceholder: "Try Montréal, Laval, H2J…", min: "Min. price ($)", max: "Max. price ($)", anyPrice: "Any", type: "Property type", beds: "Bedrooms", baths: "Bathrooms", any: "Any", all: "All properties",
     types: { house: "House", condo: "Condo", plex: "Plex", commercial: "Commercial" },
@@ -10,10 +10,10 @@ export const listingsCopy = {
     rangeError: "The maximum price must be greater than or equal to the minimum price.", empty: "No properties match your search.", emptyHelp: "Try another area or widen your price range.", back: "Back to results", notFound: "This property could not be found.",
     overview: "A closer look", facts: "Property details", location: "Area", date: "Example listing date", price: "Asking price", reference: "Reference", yes: "Yes", no: "No", unavailable: "Not specified", livingArea: "Area", bedroomCount: "bedrooms", bathroomCount: "bathrooms",
     about: { house: "A family home with room to gather, work and unwind. Explore its space and features in this sample listing.", condo: "A comfortable city home with thoughtfully arranged living spaces. Explore the layout and features in this sample listing.", plex: "A multi-unit property in an established neighbourhood. Bedroom and bathroom counts describe the principal unit; area is the building total.", commercial: "A space for your next business project. The area shown is the commercial floor area. All details are illustrative." },
-    contactTitle: "Preview this experience", contactText: "This is a sample listing, so visits and seller contact are unavailable. Real listings will appear after the publishing workflow is connected.", contactLink: "Explore selling options", photoNote: "Illustrative photo", nearby: "Keep exploring", sellerTitle: "Your property could be next.", sellerText: "Sell at your own pace, with the help you choose.", browseTitle: "Discover properties", browseText: "Homes, condos and plexes across Greater Montréal.", viewAll: "View all properties",
+    contactTitle: "Preview this experience", contactText: "This is a sample listing, so visits and seller contact are unavailable. Real listings will appear after the publishing workflow is connected.", contactLink: "Explore selling options", photoNote: "Illustrative photo", nearby: "Keep exploring", sellerTitle: "Your property could be next.", sellerText: "Sell at your own pace, with the help you choose.", browseTitle: "Discover properties", browseText: "Explore homes, condos and plexes in Québec.", viewAll: "View all properties",
   },
   fr: {
-    eyebrow: "MONTRÉAL ET SES ENVIRONS", title: "Trouvez votre prochain chez-vous.", intro: "Un quartier que vous aimez. Un lieu qui vous ressemble.",
+    eyebrow: "PARTOUT AU QUÉBEC", title: "Trouvez votre prochain chez-vous.", intro: "Un quartier que vous aimez. Un lieu qui vous ressemble.",
     sell: "Vendre ma propriété", browse: "Voir les propriétés", sample: "Catalogue de démonstration", sampleNote: "Propriétés et prix fictifs. Photos illustratives : ces biens ne sont pas offerts à la vente.",
     search: "Ville, quartier ou code postal", searchPlaceholder: "Essayez Montréal, Laval, H2J…", min: "Prix min. ($)", max: "Prix max. ($)", anyPrice: "Tous", type: "Type de propriété", beds: "Chambres", baths: "Salles de bain", any: "Tous", all: "Toutes les propriétés",
     types: { house: "Maison", condo: "Condo", plex: "Plex", commercial: "Commercial" },
@@ -23,10 +23,10 @@ export const listingsCopy = {
     rangeError: "Le prix maximal doit être supérieur ou égal au prix minimal.", empty: "Aucune propriété ne correspond à votre recherche.", emptyHelp: "Essayez un autre secteur ou élargissez votre budget.", back: "Retour aux résultats", notFound: "Cette propriété est introuvable.",
     overview: "Découvrez la propriété", facts: "Fiche de la propriété", location: "Secteur", date: "Date de l’annonce fictive", price: "Prix demandé", reference: "Référence", yes: "Oui", no: "Non", unavailable: "Non précisé", livingArea: "Superficie", bedroomCount: "chambres", bathroomCount: "salles de bain",
     about: { house: "Une maison familiale où se retrouver, travailler et se détendre. Découvrez ses espaces et ses caractéristiques dans cette annonce de démonstration.", condo: "Un chez-soi en ville aux espaces de vie bien pensés. Explorez ses caractéristiques dans cette annonce de démonstration.", plex: "Un immeuble à logements dans un quartier établi. Les chambres et salles de bain décrivent le logement principal; la superficie correspond au bâtiment entier.", commercial: "Un espace pour votre prochain projet d’entreprise. La superficie indiquée est celle des locaux commerciaux. Toutes les données sont illustratives." },
-    contactTitle: "Explorez l’expérience", contactText: "Cette annonce est fictive : les visites et le contact vendeur ne sont pas disponibles. Les annonces réelles seront ajoutées après la connexion du parcours de publication.", contactLink: "Découvrir les options de vente", photoNote: "Photo illustrative", nearby: "Continuez à explorer", sellerTitle: "Et si la prochaine propriété était la vôtre?", sellerText: "Vendez à votre rythme, avec l’aide que vous choisissez.", browseTitle: "Découvrez les propriétés", browseText: "Maisons, condos et plex dans le Grand Montréal.", viewAll: "Voir toutes les propriétés",
+    contactTitle: "Explorez l’expérience", contactText: "Cette annonce est fictive : les visites et le contact vendeur ne sont pas disponibles. Les annonces réelles seront ajoutées après la connexion du parcours de publication.", contactLink: "Découvrir les options de vente", photoNote: "Photo illustrative", nearby: "Continuez à explorer", sellerTitle: "Et si la prochaine propriété était la vôtre?", sellerText: "Vendez à votre rythme, avec l’aide que vous choisissez.", browseTitle: "Découvrez les propriétés", browseText: "Découvrez les maisons, condos et plex au Québec.", viewAll: "Voir toutes les propriétés",
   },
   zh: {
-    eyebrow: "蒙特利尔及周边", title: "找到下一个理想的家。", intro: "从喜欢的街区，找到适合自己的生活。",
+    eyebrow: "魁北克全省", title: "找到下一个理想的家。", intro: "从喜欢的街区，找到适合自己的生活。",
     sell: "发布我的房源", browse: "浏览房源", sample: "示例房源目录", sampleNote: "房源和价格均为虚构，照片仅作展示；这些房产并非真实在售。",
     search: "城市、街区或邮编", searchPlaceholder: "搜索蒙特利尔、拉瓦尔、H2J…", min: "最低价格（加元）", max: "最高价格（加元）", anyPrice: "不限", type: "房产类型", beds: "卧室数量", baths: "浴室数量", any: "不限", all: "全部房源",
     types: { house: "独立屋", condo: "公寓", plex: "多户住宅", commercial: "商业物业" },
@@ -36,6 +36,6 @@ export const listingsCopy = {
     rangeError: "最高价格不能低于最低价格。", empty: "没有符合条件的房源。", emptyHelp: "可以尝试其他地区，或扩大价格范围。", back: "返回搜索结果", notFound: "未找到这套房源。",
     overview: "了解这套房产", facts: "房产信息", location: "所在区域", date: "示例上架日期", price: "挂牌价格", reference: "房源编号", yes: "有", no: "无", unavailable: "未提供", livingArea: "面积", bedroomCount: "间卧室", bathroomCount: "间浴室",
     about: { house: "为家庭生活提供相聚、工作和休息的空间。可以通过这套示例房源了解房产信息的展示方式。", condo: "舒适的城市住宅，拥有合理的生活空间。这套示例房源展示了公寓的基本信息和配置。", plex: "位于成熟社区的多户住宅。卧室和浴室数量指主要单元，面积为整栋建筑的总面积。", commercial: "适合探索商业计划的物业空间。所示面积为商业使用面积，全部资料均为示例。" },
-    contactTitle: "体验房源详情", contactText: "这是示例房源，暂不提供预约看房或联系卖家。接通房源发布流程后，这里会展示真实房源。", contactLink: "了解卖房服务", photoNote: "示意照片", nearby: "继续浏览", sellerTitle: "下一套房源，可以是你的。", sellerText: "按自己的节奏卖房，自由选择需要的帮助。", browseTitle: "发现理想房源", browseText: "浏览大蒙特利尔地区的独立屋、公寓和多户住宅。", viewAll: "查看全部房源",
+    contactTitle: "体验房源详情", contactText: "这是示例房源，暂不提供预约看房或联系卖家。接通房源发布流程后，这里会展示真实房源。", contactLink: "了解卖房服务", photoNote: "示意照片", nearby: "继续浏览", sellerTitle: "下一套房源，可以是你的。", sellerText: "按自己的节奏卖房，自由选择需要的帮助。", browseTitle: "发现理想房源", browseText: "浏览魁北克省的独立屋、公寓和多户住宅。", viewAll: "查看全部房源",
   },
 };

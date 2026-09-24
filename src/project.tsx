@@ -56,7 +56,7 @@ export type Buyer = {
 };
 const initialDetails = (): Details => ({
   address: "",
-  city: "Montréal",
+  city: "",
   postal: "",
   type: "0",
   price: "",

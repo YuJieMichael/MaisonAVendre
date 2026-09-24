@@ -205,13 +205,13 @@ export function Dashboard({ lang }: { lang: Language }) {
   }[project?.status ?? "draft"];
   const names = navCopy[lang];
   const address = sample
-    ? t("Votre maison à Montréal", "Your Montréal home", "您的蒙特利尔房屋")
+    ? t("Votre maison au Québec", "Your home in Québec", "您的魁北克房屋")
     : form.address ||
       t("Votre projet immobilier", "Your property project", "您的卖房项目");
   const city = sample
-    ? "Montréal · Québec"
+    ? "Québec"
     : [form.city, form.postal.toUpperCase()].filter(Boolean).join(" · ") ||
-      "Montréal · Québec";
+      "Québec";
   const currency = (v: number) =>
     new Intl.NumberFormat(lang === "zh" ? "zh-CN" : `${lang}-CA`, {
       style: "currency",
