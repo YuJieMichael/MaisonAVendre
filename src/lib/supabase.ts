@@ -27,7 +27,9 @@ export const backendConfigured = validPublicConfig(url, key);
 export const supabase: SupabaseClient | null = backendConfigured
   ? createClient(url!, key!, {
       auth: {
-        flowType: "pkce",
+        // Client-only email links may open in another browser. Supabase verifies
+        // the email before issuing the fragment session; AuthProvider consumes it.
+        flowType: "implicit",
         persistSession: true,
         autoRefreshToken: true,
         // AuthProvider subscribes first, then exchanges callbacks explicitly so
