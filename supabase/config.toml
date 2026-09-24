@@ -60,3 +60,7 @@ verify_jwt = false
 [functions.send-enquiry-batches]
 # Private scheduled worker: requires ENQUIRY_CRON_TOKEN, never a browser key.
 verify_jwt = false
+
+[functions.submit-listing]
+# Public intake, bounded photo payloads and service-side validation/rate limits.
+verify_jwt = false

@@ -2,6 +2,7 @@ import { useRef, useState, type FormEvent } from 'react';
 import type { Language } from './seller-copy';
 import { backendConfigured } from './lib/supabase';
 import './enquiry.css';
+import { publicationCopy } from './publication-copy';
 import { assistanceIds, enquiryOptions } from './enquiry-options';
 
 const copy = {
@@ -56,6 +57,7 @@ export function EnquiryForm({ kind, lang, onContinue }: { kind: 'buyer' | 'selle
   }
   return <section className="enquiry-shell">
     <p className="eyebrow">MaisonÀVendre · {kind === 'buyer' ? ({en:'Buy',fr:'Acheter',zh:'买房'}[lang]) : ({en:'Sell',fr:'Vendre',zh:'卖房'}[lang])}</p>
+    {kind === 'seller' && <div className="publication-entry"><span>{publicationCopy[lang].listings}</span><a href="#publier">{publicationCopy[lang].publish} →</a></div>}
     <h1>{kind === 'buyer' ? t.buy : choosing ? selling.title : t.sell}</h1>
     {state === 'done' ? <div className="enquiry-card" role="status"><h2>{t.done}</h2><p>{t.receipt}</p>{onContinue && <button className="wide-cta" onClick={onContinue}>{t.browse}</button>}<a href="#top">{t.home}</a></div> : <>
       {kind === 'seller' && choosing ? <>

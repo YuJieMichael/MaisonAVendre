@@ -25,7 +25,10 @@ import type { Language } from "./seller-copy";
 import "./original.css";
 import "./styles.css";
 import "./dashboard.css";
+import "./publication.css";
+import { publicationCopy } from "./publication-copy";
 
+const PublishProperty = lazy(() => import("./publish-property").then(module => ({ default: module.PublishProperty })));
 const Dashboard = lazy(() => import("./dashboard").then(module => ({ default: module.Dashboard })));
 const AdminPage = lazy(() => import("./admin").then(module => ({ default: module.AdminPage })));
 const EnquiryForm = lazy(() => import("./enquiry").then(module => ({ default: module.EnquiryForm })));
@@ -78,6 +81,8 @@ function App() {
   const auth = useAuth();
   const [lang, setLang] = useState<Language>("fr");
   const [hash, setHash] = useState(location.hash);
+  const publishing = hash.startsWith("#publier");
+  const catalogue = hash.startsWith("#proprietes") || hash.startsWith("#propriete/");
   const selling = hash.startsWith("#vendre");
   const [buyerSubmitted, setBuyerSubmitted] = useState(false);
   const dashboard = hash.startsWith("#dashboard");
@@ -102,13 +107,13 @@ function App() {
     document.documentElement.lang = lang === "zh" ? "zh-Hans" : lang;
   }, [lang]);
   useEffect(() => {
-    if (selling || browsing || dashboard || !hash || hash === "#top")
+    if (publishing || catalogue || selling || browsing || dashboard || !hash || hash === "#top")
       window.scrollTo({ top: 0, behavior: "instant" });
     else
       document
         .getElementById(hash.slice(1))
         ?.scrollIntoView({ block: "start" });
-  }, [hash, selling, browsing, dashboard]);
+  }, [hash, publishing, catalogue, selling, browsing, dashboard]);
   return (
     <>
       {signingOut && <p className="account-session" role="status">{{ fr: "Enregistrement et déconnexion…", en: "Saving and signing out…", zh: "正在保存并退出…" }[lang]}</p>}
@@ -153,6 +158,7 @@ function App() {
           </a>
         </nav>
         <div className="header-actions">
+          <a className="publication-header-link" href="#proprietes" aria-current={catalogue ? "page" : undefined}>{publicationCopy[lang].listings}</a>
           <div className="language-switch" aria-label="Language">
             <Earth aria-hidden="true" />
             {(Object.keys(labels) as Language[]).map((l) => (
@@ -193,7 +199,7 @@ function App() {
         {(auth.user || dashboard || admin || authRoute) && <AccountSession lang={lang} onLeavingChange={setSigningOut} />}
         <main>
           <Suspense fallback={<LoadingWorkspace lang={lang} />}>
-          {authRoute ? <AuthPage lang={lang} /> : admin ? <AdminPage lang={lang} /> : demo ? <ProjectProvider mode="demo"><Dashboard lang={lang} /></ProjectProvider> : selling ? <EnquiryForm key="seller" kind="seller" lang={lang} /> : dashboard ? (
+          {authRoute ? <AuthPage lang={lang} /> : admin ? <AdminPage lang={lang} /> : demo ? <ProjectProvider mode="demo"><Dashboard lang={lang} /></ProjectProvider> : publishing ? <PublishProperty lang={lang} /> : catalogue ? <ListingsPage lang={lang} hash={hash} /> : selling ? <EnquiryForm key="seller" kind="seller" lang={lang} /> : dashboard ? (
             auth.loading ? <LoadingWorkspace lang={lang} /> : !auth.user ? <AuthPage lang={lang} /> : <PrivateWorkspace lang={lang}><Dashboard lang={lang} /></PrivateWorkspace>
           ) : browsing ? buyerSubmitted ? <ListingsPage lang={lang} hash={hash} /> : <EnquiryForm key="buyer" kind="buyer" lang={lang} onContinue={() => setBuyerSubmitted(true)} /> : <Home lang={lang} />}
           </Suspense>

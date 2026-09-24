@@ -8,12 +8,12 @@ Français : Les formulaires d’achat et de vente exigent uniquement le nom et l
 
 ## Current status / État actuel / 当前状态
 
-Frontend preview and backend source are implemented locally. Migration, new functions, scheduler and email credentials are **not deployed/configured yet**. `VITE_ENQUIRY_ENABLED` is off by default: the preview never claims to save data. Existing website auth/backend remains intact. User requested website changes first and deferred Resend setup.
+Migration 002 is applied to `usngcexxobcpjncuwaxo` and `submit-enquiry` is deployed. Unauthenticated requests with the browser publishable key reach application validation; the existing gateway setting was retained. Approved-origin invalid payloads return 400, other origins return 403, and anonymous private-table reads are denied. Collection is enabled in this machine's deployment build; no production fake leads were submitted. A positive real-user save remains to be checked. The scheduler, `send-enquiry-batches`, Resend credentials and verified sender are still pending. No automated CSV emails are being sent. User deferred Resend setup. Collection and email delivery can be activated separately.
 
 ## Activation
 
 1. Create Resend account, verify a sending domain/address, and store a sending API key as Supabase Edge Function secret `RESEND_API_KEY`. Never use a `VITE_` prefix for server secrets. The receiving Gmail address is not a sending-domain credential.
-2. Apply **only** `supabase/migrations/202609230002_enquiry_batches.sql` to the existing project. Initial migration 001 was previously applied through SQL Editor; do not blindly push all migrations again.
+2. Migration 002 is already applied through SQL Editor to the existing project, alongside 001 and 003. Reconcile CLI history before using `db push`; do not replay these migrations.
 3. Set Edge secrets `ENQUIRY_EMAIL_FROM` (verified sender), `ENQUIRY_RATE_SALT` (random secret), `ENQUIRY_CRON_TOKEN` (separate random secret), and `APP_ORIGIN` (actual website origin). Built-in Supabase service-role credentials stay server-side.
 4. Deploy `submit-enquiry` and `send-enquiry-batches` using repository config. Public intake validates size, required fields, origin, honeypot and rate limits (5 per client/15 min; 1000 globally/day). Verify the hosting gateway's trusted client-IP forwarding before production; CORS is not an anti-bot guarantee. Consider CAPTCHA if abuse requires it.
 5. Enable Supabase Cron/pg_net and Vault. Store the cron token in Vault as `enquiry_cron_token`, then run `supabase/schedule-enquiry-batches.sql`. The worker requires this token, never the public browser key.

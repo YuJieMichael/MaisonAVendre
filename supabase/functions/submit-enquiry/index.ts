@@ -6,9 +6,11 @@ Deno.serve(async request => {
   let origin: string;
   try { origin=new URL(Deno.env.get('APP_ORIGIN') ?? '').origin; }
   catch { return Response.json({error:'unavailable'},{status:503}); }
-  const headers={'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Headers':'content-type,apikey','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store','Vary':'Origin'};
+  const requestOrigin=request.headers.get('origin');
+  const allowed=[origin,'http://127.0.0.1:5173'];
+  const headers={'Access-Control-Allow-Origin':allowed.includes(requestOrigin||'')?requestOrigin!:origin,'Access-Control-Allow-Headers':'content-type,apikey','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store','Vary':'Origin'};
   const reply=(status:number,body:unknown)=>Response.json(body,{status,headers});
-  if (request.headers.get('origin') !== origin) return reply(403,{error:'forbidden'});
+  if (!allowed.includes(requestOrigin||'')) return reply(403,{error:'forbidden'});
   if(request.method==='OPTIONS') return new Response(null,{status:204,headers});
   if(request.method!=='POST') return reply(405,{error:'method'});
   let data;
@@ -16,7 +18,7 @@ Deno.serve(async request => {
   catch { return reply(400,{error:'invalid_input'}); }
   try {
     const secret=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    const salt=Deno.env.get('ENQUIRY_RATE_SALT');
+    const salt=Deno.env.get('ENQUIRY_RATE_SALT') || secret;
     if(!secret || !salt) return reply(503,{error:'unavailable'});
     const db=createClient(Deno.env.get('SUPABASE_URL')!,secret,{auth:{persistSession:false}});
     const ip=request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';

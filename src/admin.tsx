@@ -19,6 +19,8 @@ import { useAuth, MfaPanel } from "./auth";
 import { supabase } from "./lib/supabase";
 import type { Language } from "./seller-copy";
 import "./admin.css";
+import { ListingReview } from "./listing-review";
+import { publicationCopy } from "./publication-copy";
 
 const copy = {
   fr: {
@@ -386,7 +388,7 @@ type ProjectFile = {
   name: string;
   storage_path: string;
 };
-type Tab = "queue" | "audit" | "invite";
+type Tab = "queue" | "audit" | "invite" | "listings";
 
 export function AdminPage({ lang }: { lang: Language }) {
   const t = copy[lang];
@@ -641,6 +643,7 @@ export function AdminPage({ lang }: { lang: Language }) {
           <span>{auth.user.email}</span>
         </div>
         <nav aria-label={t.title}>
+          <button className={tab === "listings" ? "active" : ""} onClick={() => setTab("listings")}>{publicationCopy[lang].review}</button>
           <button
             className={tab === "queue" ? "active" : ""}
             onClick={() => setTab("queue")}
@@ -698,6 +701,7 @@ export function AdminPage({ lang }: { lang: Language }) {
             {message.text}
           </p>
         )}
+        {tab === "listings" && <ListingReview key={auth.user.id} lang={lang} />}
         {tab === "queue" && (
           <>
             <div className="admin-panel">
