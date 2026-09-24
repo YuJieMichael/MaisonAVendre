@@ -201,12 +201,13 @@ const copy = {
     intro: "Un seul compte pour préparer votre vente, retrouver vos documents et choisir l’aide dont vous avez besoin.",
     benefit1: "Vos projets sauvegardés", benefit2: "Des services à la carte", benefit3: "Un accès personnel sécurisé",
     login: "Retrouver mon espace", register: "Créer mon compte", forgot: "Mot de passe oublié", reset: "Choisir un nouveau mot de passe", invite: "Activer votre accès",
-    loginText: "Connectez-vous pour poursuivre votre projet.", registerText: "Commencez gratuitement. Choisissez vos services plus tard.", forgotText: "Nous vous enverrons un lien pour choisir un nouveau mot de passe.", resetText: "Choisissez un mot de passe d’au moins 12 caractères.",
-    email: "Adresse courriel", password: "Mot de passe", confirm: "Confirmer le mot de passe", passwordHint: "Au moins 12 caractères", submit: "Se connecter", create: "Créer mon compte", send: "Envoyer le lien", save: "Enregistrer le mot de passe", busy: "Un instant…",
+    loginText: "Connectez-vous pour poursuivre votre projet.", registerText: "Commencez gratuitement. Choisissez vos services plus tard.", forgotText: "Nous vous enverrons un lien pour choisir un nouveau mot de passe.", resetText: "Choisissez un mot de passe d’au moins 8 caractères.",
+    email: "Adresse courriel", password: "Mot de passe", confirm: "Confirmer le mot de passe", passwordHint: "Au moins 8 caractères", submit: "Se connecter", create: "Créer mon compte", send: "Envoyer le lien", save: "Enregistrer le mot de passe", busy: "Un instant…",
     noAccount: "Vous commencez votre projet ?", already: "Vous avez déjà un compte ?", back: "Revenir à la connexion", home: "Retour à l’accueil",
     verify: "Vérifiez votre boîte courriel pour confirmer votre adresse, puis connectez-vous. Ouvrez le lien dans ce navigateur.",
     sent: "Si cette adresse est associée à un compte, vous recevrez un lien de réinitialisation. Ouvrez-le dans ce navigateur.", saved: "Votre mot de passe a été enregistré.", mismatch: "Les mots de passe ne correspondent pas.",
     unavailable: "L’espace sécurisé sera bientôt disponible.", unavailableText: "Le service de connexion n’est pas encore configuré. Aucun compte ne peut être créé pour le moment.",
+    linkFailed: "Connexion par lien interrompue", linkHelp: "Ce lien ne peut pas terminer la connexion dans ce navigateur. Si vous venez de confirmer votre courriel, essayez de vous connecter avec votre mot de passe. Pour réinitialiser le mot de passe, demandez un nouveau lien ici et ouvrez-le dans le même navigateur, sur ce même site.",
     callback: "Vérification de votre lien…", invalid: "Ce lien n’est pas valide ou a expiré. Demandez un nouveau lien.", retry: "Réessayer", issue: "La demande n’a pas pu être traitée.",
     privacy: "Votre compte est personnel. Aucune souscription payante n’est requise pour le créer.",
     mfaTitle: "Protégez votre accès administrateur", mfaText: "La double authentification est obligatoire pour accéder à l’administration.",
@@ -218,11 +219,12 @@ const copy = {
     intro: "One account to prepare your sale, keep your documents together and choose the help you need.",
     benefit1: "Your projects, saved", benefit2: "Services when you need them", benefit3: "Secure, personal access",
     login: "Welcome back", register: "Create your account", forgot: "Forgot your password?", reset: "Choose a new password", invite: "Activate your access",
-    loginText: "Sign in to pick up where you left off.", registerText: "Start for free. Choose your services later.", forgotText: "We’ll email you a link to choose a new password.", resetText: "Choose a password with at least 12 characters.",
-    email: "Email address", password: "Password", confirm: "Confirm password", passwordHint: "At least 12 characters", submit: "Sign in", create: "Create account", send: "Send reset link", save: "Save password", busy: "One moment…",
+    loginText: "Sign in to pick up where you left off.", registerText: "Start for free. Choose your services later.", forgotText: "We’ll email you a link to choose a new password.", resetText: "Choose a password with at least 8 characters.",
+    email: "Email address", password: "Password", confirm: "Confirm password", passwordHint: "At least 8 characters", submit: "Sign in", create: "Create account", send: "Send reset link", save: "Save password", busy: "One moment…",
     noAccount: "Starting your project?", already: "Already have an account?", back: "Back to sign in", home: "Back to home",
     verify: "Check your email to confirm your address, then sign in. Open the confirmation link in this browser.", sent: "If this email belongs to an account, you’ll receive a reset link. Open it in this browser.", saved: "Your password has been saved.", mismatch: "The passwords do not match.",
     unavailable: "Your secure space is coming soon.", unavailableText: "Sign-in has not been configured yet. Accounts cannot be created at this time.",
+    linkFailed: "Link sign-in could not finish", linkHelp: "This link cannot finish signing you in with this browser. If you just confirmed your email, try signing in with your password. To reset your password, request a new link here and open it in the same browser, on this same website.",
     callback: "Verifying your link…", invalid: "This link is invalid or has expired. Please request a new link.", retry: "Try again", issue: "We couldn’t complete your request.",
     privacy: "Your account is personal. Creating one does not require a paid subscription.",
     mfaTitle: "Protect your administrator access", mfaText: "Two-factor authentication is required to access administration.", mfaSetup: "Enable two-factor authentication", mfaScan: "Scan this QR code with your authenticator app, then enter its 6-digit code.", mfaCode: "6-digit code", mfaVerify: "Verify and continue", mfaExisting: "Enter the code from your authenticator app.", mfaSecret: "Manual setup key", mfaComplete: "Your access is verified.", needLogin: "Sign in to continue.",
@@ -232,11 +234,12 @@ const copy = {
     intro: "一个账号，保存房屋资料、管理卖房进度，在需要时选择专业帮助。",
     benefit1: "项目资料持续保存", benefit2: "按需选择专业服务", benefit3: "独立且安全的个人空间",
     login: "欢迎回来", register: "创建您的账号", forgot: "找回密码", reset: "设置新密码", invite: "激活您的访问权限",
-    loginText: "登录账号，继续您的卖房计划。", registerText: "免费开始准备，需要帮助时再选择服务。", forgotText: "输入注册邮箱，我们会向您发送密码重置链接。", resetText: "请设置至少 12 个字符的新密码。",
-    email: "邮箱地址", password: "密码", confirm: "确认密码", passwordHint: "至少 12 个字符", submit: "登录工作室", create: "创建账号", send: "发送重置链接", save: "保存新密码", busy: "正在处理…",
+    loginText: "登录账号，继续您的卖房计划。", registerText: "免费开始准备，需要帮助时再选择服务。", forgotText: "输入注册邮箱，我们会向您发送密码重置链接。", resetText: "请设置至少 8 个字符的新密码。",
+    email: "邮箱地址", password: "密码", confirm: "确认密码", passwordHint: "至少 8 个字符", submit: "登录工作室", create: "创建账号", send: "发送重置链接", save: "保存新密码", busy: "正在处理…",
     noAccount: "第一次开始卖房计划？", already: "已经有账号？", back: "返回登录", home: "返回首页",
     verify: "请查看邮箱并验证邮箱地址，再登录您的账号。请使用当前浏览器打开验证链接。", sent: "如果此邮箱已注册，您将收到密码重置链接。请使用当前浏览器打开链接。", saved: "您的密码已保存。", mismatch: "两次输入的密码不一致。",
     unavailable: "安全账号功能即将开放。", unavailableText: "登录服务尚未完成配置，目前暂时无法创建账号。",
+    linkFailed: "链接登录未完成", linkHelp: "这个链接无法在当前浏览器完成登录。如果刚刚验证了邮箱，请尝试用原密码登录。若要重置密码，请在这里重新申请链接，并在同一个浏览器、同一个网站中打开，不要在本地版和线上版之间切换。",
     callback: "正在验证您的链接…", invalid: "此链接无效或已过期，请重新申请链接。", retry: "重试", issue: "请求未能完成。",
     privacy: "账号仅供本人使用。创建账号无需购买套餐。",
     mfaTitle: "保护您的管理员账号", mfaText: "进入管理后台前，需要完成双重验证。", mfaSetup: "启用双重验证", mfaScan: "使用身份验证器应用扫描此二维码，然后输入应用中的 6 位验证码。", mfaCode: "6 位验证码", mfaVerify: "验证并继续", mfaExisting: "请输入身份验证器应用中的验证码。", mfaSecret: "手动设置密钥", mfaComplete: "您的访问身份已验证。", needLogin: "请先登录账号。",
@@ -309,19 +312,22 @@ export function AuthPage({ lang }: { lang: Language }) {
     </section>
     <section className="auth-card" aria-labelledby="auth-title">
       <div className="auth-symbol"><LockKeyhole size={25} /></div>
-      <h2 id="auth-title">{mode === "callback" ? c.callback : c[mode]}</h2>
+      <h2 id="auth-title">{mode === "callback" ? (auth.callbackError || (!auth.callbackPending && !auth.loading) ? c.linkFailed : c.callback) : c[mode]}</h2>
       {!backendConfigured ? <div className="auth-notice"><strong>{c.unavailable}</strong><p>{c.unavailableText}</p></div>
       : mode === "callback" ? <div role={auth.callbackError ? "alert" : "status"} className={auth.callbackError ? "auth-error" : "auth-notice"}>
-          {auth.callbackError || (auth.callbackPending || auth.loading ? c.callback : c.invalid)}
-          {auth.callbackError && <a href="#forgot-password">{c.forgot}</a>}
+          {auth.callbackPending || auth.loading ? c.callback : <>
+            <p>{c.linkHelp}</p>
+            <a href="#login">{c.back}</a>
+            <a href="#forgot-password">{c.forgot}</a>
+          </>}
         </div>
       : passwordMode && !canSetPassword ? <div className="auth-notice" role="status">{auth.loading ? c.callback : c.invalid}<a href="#forgot-password">{c.forgot}</a></div>
       : <>
         <p className="auth-subtitle">{mode === "register" ? c.registerText : mode === "forgot" ? c.forgotText : passwordMode ? c.resetText : c.loginText}</p>
         <form onSubmit={submit} className="auth-form">
           {!passwordMode && <label>{c.email}<span className="auth-input-wrap"><Mail size={18} /><input type="email" name="email" autoComplete="email" required maxLength={254} value={email} onChange={event => setEmail(event.target.value)} disabled={busy} /></span></label>}
-          {mode !== "forgot" && <label>{c.password}<input type="password" name="password" autoComplete={mode === "login" ? "current-password" : "new-password"} required minLength={mode === "login" ? 1 : 12} maxLength={128} value={password} onChange={event => setPassword(event.target.value)} disabled={busy} />{mode !== "login" && <small>{c.passwordHint}</small>}</label>}
-          {(mode === "register" || passwordMode) && <label>{c.confirm}<input type="password" name="password-confirm" autoComplete="new-password" required minLength={12} maxLength={128} value={confirm} onChange={event => setConfirm(event.target.value)} disabled={busy} /></label>}
+          {mode !== "forgot" && <label>{c.password}<input type="password" name="password" autoComplete={mode === "login" ? "current-password" : "new-password"} required minLength={mode === "login" ? 1 : 8} maxLength={128} value={password} onChange={event => setPassword(event.target.value)} disabled={busy} />{mode !== "login" && <small>{c.passwordHint}</small>}</label>}
+          {(mode === "register" || passwordMode) && <label>{c.confirm}<input type="password" name="password-confirm" autoComplete="new-password" required minLength={8} maxLength={128} value={confirm} onChange={event => setConfirm(event.target.value)} disabled={busy} /></label>}
           {mode === "login" && <a className="auth-forgot" href="#forgot-password">{c.forgot}</a>}
           {(error || auth.error) && <div className="auth-error" role="alert">{error || auth.error}</div>}
           {notice && <div className="auth-notice" role="status">{notice}</div>}
