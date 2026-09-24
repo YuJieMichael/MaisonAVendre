@@ -19,3 +19,5 @@ Les migrations 001–004 sont appliquées. Les données privées et les photos s
 ## 中文
 
 数据库迁移 001–004、咨询和房源接口已部署，私人资料与照片受权限保护。当前构建启用买卖咨询收集；满 10 条发送邮件仍待 Resend 配置。房源提交已启用，正式目录只展示数据库中已审核的房源。管理员已注册、验证并获所有者权限，已按本人确认改用邮箱验证码，仍需配置 Resend 后完成验证。内部测试房源及照片已真实保存、保持未公开，正式审核全流程待验证。新网站初始为仅所有者访问，原网址未修改。数据库已核对收到两条卖房咨询；测试照片上传已成功，审核发布全流程待验证。
+
+Buyer inbox: migration 005 was applied after explicit approval. Verified staff can read buyer enquiries individually through a read-only paginated RPC; direct table access remains revoked. The ten-enquiry email batch workflow is unchanged. / Administration : demandes d’achat individuelles. / 后台买家咨询逐条可查，邮件仍按十条汇总。

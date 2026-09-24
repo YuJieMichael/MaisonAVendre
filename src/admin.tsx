@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "./auth";
 import { AdminEmailPanel } from "./admin-email";
+import { BuyerEnquiries, buyerInboxCopy } from "./buyer-enquiries";
 import { supabase } from "./lib/supabase";
 import type { Language } from "./seller-copy";
 import "./admin.css";
@@ -389,12 +390,13 @@ type ProjectFile = {
   name: string;
   storage_path: string;
 };
-type Tab = "queue" | "audit" | "invite" | "listings";
+type Tab = "queue" | "audit" | "invite" | "listings" | "buyers";
 
 export function AdminPage({ lang }: { lang: Language }) {
   const t = copy[lang];
   const auth = useAuth();
   const [tab, setTab] = useState<Tab>("queue");
+  const [enquiryRefresh, setEnquiryRefresh] = useState(0);
   const [projects, setProjects] = useState<ReviewProject[]>([]);
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [selected, setSelected] = useState<ReviewProject | null>(null);
@@ -644,6 +646,7 @@ export function AdminPage({ lang }: { lang: Language }) {
           <span>{auth.user.email}</span>
         </div>
         <nav aria-label={t.title}>
+          <button className={tab === "buyers" ? "active" : ""} onClick={() => setTab("buyers")}>{buyerInboxCopy[lang].title}</button>
           <button className={tab === "listings" ? "active" : ""} onClick={() => setTab("listings")}>{publicationCopy[lang].review}</button>
           <button
             className={tab === "queue" ? "active" : ""}
@@ -686,6 +689,7 @@ export function AdminPage({ lang }: { lang: Language }) {
             className="admin-secondary"
             onClick={() => {
               setMessage(null);
+              setEnquiryRefresh(value => value + 1);
               void refresh();
             }}
             disabled={loading || busy}
@@ -703,6 +707,7 @@ export function AdminPage({ lang }: { lang: Language }) {
           </p>
         )}
         {tab === "listings" && <ListingReview key={auth.user.id} lang={lang} />}
+        {tab === "buyers" && <BuyerEnquiries key={auth.user.id} lang={lang} refreshKey={enquiryRefresh} />}
         {tab === "queue" && (
           <>
             <div className="admin-panel">
