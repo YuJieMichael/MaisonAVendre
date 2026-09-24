@@ -1,5 +1,14 @@
 {
   "folders": [
     { "name": "MaisonÀVendre", "path": "." }
-  ]
+  ],
+  "settings": {
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "terminal.integrated.env.windows": {
+      "PATH": "${env:ProgramFiles}\\nodejs;${env:PATH}"
+    },
+    "files.exclude": { "**/node_modules": true },
+    "search.exclude": { "**/node_modules": true, "**/dist": true, "**/package-lock.json": true }
+  }
 }
