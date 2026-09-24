@@ -58,6 +58,7 @@ beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   vi.clearAllMocks();
   sessionStorage.clear();
+  mock.signIn.mockReset();
   mock.signUp.mockResolvedValue({ data: { session: null }, error: null });
   mock.resend.mockResolvedValue({ error: null });
   mock.exchange.mockReset(); mock.setSession.mockReset(); mock.enroll.mockReset(); mock.verify.mockReset();
@@ -92,17 +93,71 @@ describe("authentication boundaries", () => {
     await render();
     expect(window.location.hash).toBe('#reset-password');expect(state.recoverySession).toBe(true);
   });
-  it('shows a dialog and keeps the waiting page when verification is not detected',async()=>{
-    const alert=vi.spyOn(window,'alert').mockImplementation(()=>{});
-    window.history.replaceState(null,'','/#register');
-    sessionStorage.setItem('maisonavendre.pending-signup',JSON.stringify({email:'waiting@example.test',at:Date.now()}));
+  async function waitingSignIn() {
+    window.history.replaceState(null, '', '/#register');
+    sessionStorage.setItem('maisonavendre.pending-signup', JSON.stringify({email: 'waiting@example.test', at: Date.now()}));
+    await render();
+    const field = container.querySelector<HTMLInputElement>('input[name=password]')!;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(field, 'test-only-password');
+      field.dispatchEvent(new Event('input', {bubbles: true}));
+    });
+    await act(async () => container.querySelector('form')!.dispatchEvent(new Event('submit', {bubbles: true, cancelable: true})));
+    await flush();
+  }
+  it('signs in after confirmation in another browser without a pre-existing local session', async () => {
+    const verified = session('waiting');
+    verified.user.email_confirmed_at = new Date().toISOString();
+    mock.signIn.mockImplementation(async () => {
+      mock.session = verified;
+      for (const callback of mock.callbacks) callback('SIGNED_IN', verified);
+      return {data: {session: verified}, error: null};
+    });
+    await waitingSignIn();
+    expect(mock.signIn).toHaveBeenCalledWith({email: 'waiting@example.test', password: 'test-only-password'});
+    expect(mock.getUser).not.toHaveBeenCalled();
+    expect(window.location.hash).toBe('#dashboard');
+    expect(state.user?.id).toBe('waiting');
+    expect(sessionStorage.getItem('maisonavendre.pending-signup')).toBeNull();
+    expect(container.querySelector<HTMLInputElement>('input[name=password]')?.value ?? '').toBe('');
+  });
+  it('keeps an unconfirmed account on the waiting screen with a resend option', async () => {
+    const alert = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    mock.signIn.mockResolvedValue({data: {session: null}, error: {code: 'email_not_confirmed', message: 'Email not confirmed'}});
     try {
-      await render();
-      const button=Array.from(container.querySelectorAll('button')).find(b=>b.textContent==='Check email verification');
-      expect(button).toBeDefined();
-      await act(async()=>button!.click());
-      expect(alert).toHaveBeenCalled();expect(window.location.hash).toBe('#register');expect(state.user).toBeNull();
-    }finally{alert.mockRestore();}
+      await waitingSignIn();
+      expect(window.location.hash).toBe('#register');
+      expect(container.querySelector('[role=alert]')?.textContent).toContain('Your email has not been confirmed');
+      expect(alert).toHaveBeenCalledTimes(1);
+      expect(container.textContent).toContain('Resend confirmation email');
+      expect(container.querySelector<HTMLInputElement>('input[name=password]')!.value).toBe('');
+      expect(state.user).toBeNull();
+    } finally { alert.mockRestore(); }
+  });
+  it.each(['Invalid login credentials', 'Network request failed'])('does not describe %s as an unconfirmed email', async message => {
+    mock.signIn.mockRejectedValue(new Error(message));
+    await waitingSignIn();
+    expect(window.location.hash).toBe('#register');
+    expect(container.querySelector('[role=alert]')?.textContent).toBe(message);
+    expect(container.textContent).not.toContain('Your email has not been confirmed');
+    expect(sessionStorage.getItem('maisonavendre.pending-signup')).not.toContain('test-only-password');
+    expect(container.querySelector<HTMLButtonElement>('button[type=submit]')!.disabled).toBe(false);
+  });
+  it('clears the waiting password when changing the registration email', async () => {
+    mock.signIn.mockResolvedValue({data: {session: null}, error: {message: 'Invalid login credentials'}});
+    await waitingSignIn();
+    const change = [...container.querySelectorAll('button')].find(button => button.textContent === 'Change email address')!;
+    await act(async () => change.click());
+    expect(container.querySelector<HTMLInputElement>('input[name=password]')!.value).toBe('');
+    expect(container.querySelector('input[name=password-confirm]')).not.toBeNull();
+    expect(sessionStorage.getItem('maisonavendre.pending-signup')).toBeNull();
+  });
+  it('requires a server session before leaving the waiting screen', async () => {
+    mock.signIn.mockResolvedValue({data: {session: null}, error: null});
+    await waitingSignIn();
+    expect(window.location.hash).toBe('#register');
+    expect(container.querySelector('[role=alert]')).not.toBeNull();
+    expect(sessionStorage.getItem('maisonavendre.pending-signup')).toContain('waiting@example.test');
   });
   it('uses email verification without QR codes and only opens access after server approval', async () => {
     mock.session=session('owner');
@@ -154,8 +209,8 @@ describe("authentication boundaries", () => {
     await flush();
     expect(mock.signUp).toHaveBeenCalledTimes(1);
     expect(container.textContent).toContain("Confirm your email address");
-    expect(container.querySelector('form')).toBeNull();
-    expect(container.querySelector('input[type=password]')).toBeNull();
+    expect(container.querySelector('form')).not.toBeNull();
+    expect(container.querySelector<HTMLInputElement>('input[type=password]')!.value).toBe('');
     expect(sessionStorage.getItem("maisonavendre.pending-signup")).not.toContain("test-only-password");
     await emit("SIGNED_IN", session("waiting"));
     expect(window.location.hash).toBe("#register");

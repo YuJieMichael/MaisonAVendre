@@ -225,7 +225,7 @@ export function useAuth() {
 
 const copy = {
   fr: {
-    waitingTitle: "Confirmez votre adresse courriel", waitingText: "Consultez votre boîte courriel et cliquez sur le dernier lien de confirmation. Une fois le courriel validé, votre espace s’ouvrira automatiquement dans le navigateur où vous ouvrez le lien.", waitingOther: "Cette page continue automatiquement si la connexion est partagée avec cet onglet. Sinon, revenez vous connecter après confirmation. Vérifiez aussi les indésirables.", verifiedLogin: "J’ai confirmé mon courriel — me connecter", resend: "Renvoyer le courriel", resent: "Demande envoyée. Consultez votre boîte courriel et utilisez le lien le plus récent.", changeEmail: "Modifier l’adresse courriel",
+    waitingTitle: "Confirmez votre adresse courriel", waitingText: "Consultez votre boîte courriel et cliquez sur le dernier lien de confirmation. Une fois le courriel validé, votre espace s’ouvrira automatiquement dans le navigateur où vous ouvrez le lien.", waitingOther: "Cette page continue automatiquement si la connexion est partagée avec cet onglet. Si vous avez confirmé dans un autre navigateur, saisissez votre mot de passe ci-dessous pour vous connecter ici. Vérifiez aussi les indésirables.", verifiedLogin: "J’ai confirmé mon courriel — me connecter", resend: "Renvoyer le courriel", resent: "Demande envoyée. Consultez votre boîte courriel et utilisez le lien le plus récent.", changeEmail: "Modifier l’adresse courriel",
     eyebrow: "VOTRE ESPACE MAISONÀVENDRE", title: "Votre projet,\nà votre rythme.",
     intro: "Un seul compte pour préparer votre vente, retrouver vos documents et choisir l’aide dont vous avez besoin.",
     benefit1: "Vos projets sauvegardés", benefit2: "Des services à la carte", benefit3: "Un accès personnel sécurisé",
@@ -244,7 +244,7 @@ const copy = {
     mfaCode: "Code à 6 chiffres", mfaVerify: "Vérifier et continuer", mfaExisting: "Saisissez le code de votre application d’authentification.", mfaSecret: "Clé de configuration manuelle", mfaComplete: "Votre accès est vérifié.", needLogin: "Connectez-vous pour continuer.",
   },
   en: {
-    waitingTitle: "Confirm your email address", waitingText: "Check your inbox and click the latest confirmation link. Once your email is verified, your account opens automatically in the browser where you open the link.", waitingOther: "This page continues automatically when the sign-in is shared with this tab. Otherwise, return to sign in after confirmation. Check your spam folder too.", verifiedLogin: "I confirmed my email — sign in", resend: "Resend confirmation email", resent: "Request sent. Check your inbox and use the newest link.", changeEmail: "Change email address",
+    waitingTitle: "Confirm your email address", waitingText: "Check your inbox and click the latest confirmation link. Once your email is verified, your account opens automatically in the browser where you open the link.", waitingOther: "This page continues automatically when the sign-in is shared with this tab. If you confirmed in another browser, enter your password below to sign in here. Check your spam folder too.", verifiedLogin: "I confirmed my email — sign in", resend: "Resend confirmation email", resent: "Request sent. Check your inbox and use the newest link.", changeEmail: "Change email address",
     eyebrow: "YOUR MAISONÀVENDRE SPACE", title: "Your project,\nat your own pace.",
     intro: "One account to prepare your sale, keep your documents together and choose the help you need.",
     benefit1: "Your projects, saved", benefit2: "Services when you need them", benefit3: "Secure, personal access",
@@ -260,7 +260,7 @@ const copy = {
     mfaTitle: "Protect your administrator access", mfaText: "Two-factor authentication is required to access administration.", mfaSetup: "Enable two-factor authentication", mfaScan: "In Google Authenticator or Microsoft Authenticator, add an account and scan this QR code. Do not use the phone camera app. Enter the 6-digit code here. You can also use the manual setup key below.", mfaCode: "6-digit code", mfaVerify: "Verify and continue", mfaExisting: "Enter the code from your authenticator app.", mfaSecret: "Manual setup key", mfaComplete: "Your access is verified.", needLogin: "Sign in to continue.",
   },
   zh: {
-    waitingTitle: "等待邮箱验证", waitingText: "请前往邮箱，点击最新邮件中的验证链接。邮箱验证成功后，会在打开链接的浏览器中自动进入账号。", waitingOther: "如果当前标签页共享登录状态，这里也会自动进入；若在其他浏览器验证，返回这里登录即可。没收到时也请检查垃圾邮件。", verifiedLogin: "我已验证邮箱，前往登录", resend: "重新发送验证邮件", resent: "发送请求已成功，请检查邮箱并使用最新链接。", changeEmail: "修改邮箱地址",
+    waitingTitle: "等待邮箱验证", waitingText: "请前往邮箱，点击最新邮件中的验证链接。邮箱验证成功后，会在打开链接的浏览器中自动进入账号。", waitingOther: "如果当前标签页共享登录状态，这里也会自动进入；若在其他浏览器验证，请在下方输入密码，在这里登录。没收到时也请检查垃圾邮件。", verifiedLogin: "我已验证邮箱，登录", resend: "重新发送验证邮件", resent: "发送请求已成功，请检查邮箱并使用最新链接。", changeEmail: "修改邮箱地址",
     eyebrow: "MAISONÀVENDRE · 您的专属空间", title: "您的卖房计划，\n由您掌握节奏。",
     intro: "一个账号，保存房屋资料、管理卖房进度，在需要时选择专业帮助。",
     benefit1: "项目资料持续保存", benefit2: "按需选择专业服务", benefit3: "独立且安全的个人空间",
@@ -315,22 +315,11 @@ export function AuthPage({ lang }: { lang: Language }) {
   const [pendingEmail, setPendingEmail] = useState(readPendingSignup);
   const [resendWait, setResendWait] = useState(0);
   const waiting = mode === "register" && Boolean(pendingEmail);
-  const verificationCopy = {
-    en: {check:'Check email verification', missing:'No verified sign-in was detected here yet. Open the latest confirmation email and try again. If you confirmed in another browser, you can sign in here manually.', unconfirmed:'Your email has not been confirmed. Open the latest confirmation email before signing in.'},
-    fr: {check:'Vérifier la confirmation du courriel', missing:'Aucune connexion vérifiée détectée ici pour le moment. Ouvrez le dernier courriel de confirmation puis réessayez. Si vous avez confirmé dans un autre navigateur, vous pouvez vous connecter ici manuellement.', unconfirmed:'Votre courriel n’est pas encore confirmé. Ouvrez le dernier courriel de confirmation avant de vous connecter.'},
-    zh: {check:'检查邮箱验证状态', missing:'当前浏览器尚未检测到已验证的登录状态。请打开最新验证邮件后重试。如果已在其他浏览器验证，可以手动在这里登录。', unconfirmed:'邮箱尚未验证成功，请先打开最新邮件完成验证，再登录。'},
+  const unconfirmedMessage = {
+    en: 'Your email has not been confirmed. Open the latest confirmation email before signing in.',
+    fr: 'Votre courriel n’est pas encore confirmé. Ouvrez le dernier courriel de confirmation avant de vous connecter.',
+    zh: '邮箱尚未验证成功，请先打开最新邮件完成验证，再登录。',
   }[lang];
-  const checkVerification = async () => {
-    if (!supabase || busy) return;
-    setBusy(true);
-    try {
-      const {data,error:checkError}=await supabase.auth.getUser();
-      if (!checkError && data.user?.email_confirmed_at && data.user.email?.toLowerCase()===pendingEmail.toLowerCase()) {
-        await auth.refreshAuth(); savePendingSignup(''); setPendingEmail(''); window.location.hash='dashboard';
-      } else window.alert(verificationCopy.missing);
-    } catch { window.alert(verificationCopy.missing); }
-    finally {setBusy(false);}
-  };
   useEffect(() => { setError(""); setNotice(""); setPassword(""); setConfirm(""); }, [mode]);
   useEffect(() => {
     if (!resendWait) return;
@@ -357,21 +346,24 @@ export function AuthPage({ lang }: { lang: Language }) {
   const canSetPassword = Boolean(auth.user && (mode === "reset" ? auth.recoverySession : auth.invitationSession));
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!supabase || busy || waiting) return;
+    if (!supabase || busy) return;
     setError(""); setNotice("");
-    if ((mode === "register" || passwordMode) && password !== confirm) { setError(c.mismatch); return; }
+    if (((mode === "register" && !waiting) || passwordMode) && password !== confirm) { setError(c.mismatch); return; }
     setBusy(true);
     try {
-      if (mode === "login") {
+      if (mode === "login" || waiting) {
         auth.clearRecovery();
-        const { error: resultError } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        const address = waiting ? pendingEmail : email.trim();
+        const { data, error: resultError } = await supabase.auth.signInWithPassword({ email: address, password });
         if (resultError?.code === "email_not_confirmed") {
-          const address = email.trim(); savePendingSignup(address); setPendingEmail(address);
-          setPassword(""); setConfirm(""); setError(verificationCopy.unconfirmed);
-          window.alert(verificationCopy.unconfirmed);
+          savePendingSignup(address); setPendingEmail(address);
+          setPassword(""); setConfirm(""); setError(unconfirmedMessage);
+          window.alert(unconfirmedMessage);
           return;
         }
         if (resultError) throw resultError;
+        if (!data.session) throw new Error(c.issue);
+        setPassword(""); setConfirm("");
         savePendingSignup(""); setPendingEmail("");
         window.location.hash = "dashboard";
       } else if (mode === "register") {
@@ -411,10 +403,15 @@ export function AuthPage({ lang }: { lang: Language }) {
           <p className="auth-subtitle">{c.waitingOther}</p>
           {error && <div className="auth-error" role="alert">{error}</div>}
           {notice && <div className="auth-notice" role="status">{notice}</div>}
-          <button className="auth-primary" type="button" disabled={busy} onClick={() => void checkVerification()}>{verificationCopy.check}<ArrowRight size={18} /></button>
+          <form onSubmit={submit} className="auth-form">
+            <label>{c.email}<input type="email" name="email" autoComplete="username" value={pendingEmail} readOnly /></label>
+            <label>{c.password}<input type="password" name="password" autoComplete="current-password" required minLength={1} maxLength={128} value={password} onChange={event => setPassword(event.target.value)} disabled={busy} /></label>
+            <a className="auth-forgot" href="#forgot-password" onClick={() => setEmail(pendingEmail)}>{c.forgot}</a>
+            <button className="auth-primary" type="submit" disabled={busy}>{busy ? c.busy : c.verifiedLogin}<ArrowRight size={18} /></button>
+          </form>
           <a className="auth-back" href="#login" onClick={() => setEmail(pendingEmail)}>{c.back}</a>
           <button className="auth-text-button" type="button" disabled={busy || resendWait > 0} onClick={() => { void resend(); }}>{c.resend}{resendWait > 0 ? ` (${resendWait}s)` : ""}</button>
-          <button className="auth-text-button" type="button" disabled={busy} onClick={() => { savePendingSignup(""); setPendingEmail(""); setNotice(""); setError(""); }}>{c.changeEmail}</button>
+          <button className="auth-text-button" type="button" disabled={busy} onClick={() => { savePendingSignup(""); setPendingEmail(""); setPassword(""); setConfirm(""); setNotice(""); setError(""); }}>{c.changeEmail}</button>
         </>
       : mode === "callback" ? <div role={auth.callbackError ? "alert" : "status"} className={auth.callbackError ? "auth-error" : "auth-notice"}>
           {auth.callbackPending || auth.loading ? c.callback : <>
