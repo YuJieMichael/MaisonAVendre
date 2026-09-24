@@ -6,12 +6,14 @@ import {
   Camera,
   Check,
   CheckCircle2,
+  ChevronLeft,
   ChevronRight,
   ClipboardList,
   Download,
   Eye,
   FileText,
   FolderOpen,
+  Globe2,
   Handshake,
   Heart,
   House,
@@ -181,6 +183,12 @@ export function Dashboard({ lang }: { lang: Language }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [offerOpen, setOfferOpen] = useState(false);
   const [showVisitForm, setShowVisitForm] = useState(false);
+  const [visitDate, setVisitDate] = useState("");
+  const [visitTime, setVisitTime] = useState("");
+  const [visitMonth, setVisitMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
   useEffect(() => {
     const change = () => {
       setSection(sectionFromHash());
@@ -249,7 +257,7 @@ export function Dashboard({ lang }: { lang: Language }) {
   const displayedPhotos = sample ? [] : photos;
   const hero =
     displayedPhotos[0]?.url ??
-    `${import.meta.env.BASE_URL}maisonavendre-hero.png`;
+    `${import.meta.env.BASE_URL}propriete-en-vente-hero.png`;
   const sampleVisits = [
     { date: "2026-10-03", time: "10:30", name: "Camille R." },
     { date: "2026-10-04", time: "14:00", name: "Alex M." },
@@ -265,6 +273,35 @@ export function Dashboard({ lang }: { lang: Language }) {
       day: "numeric",
       month: "short",
     }).format(new Date(date + "T12:00:00"));
+  const locale = lang === "zh" ? "zh-CN" : `${lang}-CA`;
+  const todayDate = new Date();
+  const today = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, "0")}-${String(todayDate.getDate()).padStart(2, "0")}`;
+  const visitYear = visitMonth.getFullYear();
+  const visitMonthIndex = visitMonth.getMonth();
+  const visitFirstWeekday = (new Date(visitYear, visitMonthIndex, 1).getDay() + 6) % 7;
+  const visitDaysInMonth = new Date(visitYear, visitMonthIndex + 1, 0).getDate();
+  const visitCalendarCells = Array.from(
+    { length: visitFirstWeekday + visitDaysInMonth },
+    (_, index) => index < visitFirstWeekday ? null : index - visitFirstWeekday + 1,
+  );
+  const visitMonthLabel = new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(visitMonth);
+  const visitCanGoBack =
+    visitYear > todayDate.getFullYear() ||
+    (visitYear === todayDate.getFullYear() && visitMonthIndex > todayDate.getMonth());
+  const visitIsoDate = (day: number) =>
+    `${visitYear}-${String(visitMonthIndex + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  const visitWeekdays = {
+    fr: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"],
+    en: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    zh: ["一", "二", "三", "四", "五", "六", "日"],
+  }[lang];
+  const visitSlots = ["09:00", "10:30", "12:00", "13:30", "15:00", "16:30", "18:00"];
+  const formatVisitTime = (value: string) => {
+    const [hour, minute] = value.split(":").map(Number);
+    return new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" }).format(
+      new Date(2000, 0, 1, hour, minute),
+    );
+  };
 
   return (
     <div className="dashboard-app">
@@ -272,7 +309,7 @@ export function Dashboard({ lang }: { lang: Language }) {
         <div className="workspace-label">
           <span className="workspace-monogram">M</span>
           <div>
-            <strong>MaisonÀVendre</strong>
+            <strong>Propriété En Vente</strong>
             <small>
               {t("ESPACE VENDEUR", "SELLER WORKSPACE", "卖家工作台")}
             </small>
@@ -906,9 +943,16 @@ export function Dashboard({ lang }: { lang: Language }) {
                 </p>
               </div>
               <button
-                disabled={isDemo || busy}
+                disabled={busy}
                 onClick={() => {
-                  setShowVisitForm(!showVisitForm);
+                  const opening = !showVisitForm;
+                  setShowVisitForm(opening);
+                  if (opening) {
+                    setVisitDate("");
+                    setVisitTime("");
+                    const now = new Date();
+                    setVisitMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+                  }
                 }}
               >
                 <Plus />
@@ -921,12 +965,13 @@ export function Dashboard({ lang }: { lang: Language }) {
                 onSubmit={(e: FormEvent<HTMLFormElement>) => {
                   e.preventDefault();
                   const data = new FormData(e.currentTarget);
+                  if (!visitDate || !visitTime) return;
                   setVisits((old) => [
                     ...old,
                     {
                       name: String(data.get("visitor")),
-                      date: String(data.get("date")),
-                      time: String(data.get("time")),
+                      date: visitDate,
+                      time: visitTime,
                     },
                   ]);
                   setShowVisitForm(false);
@@ -943,15 +988,81 @@ export function Dashboard({ lang }: { lang: Language }) {
                   {t("Nom / note", "Name / note", "姓名／备注")}
                   <input name="visitor" required maxLength={100} />
                 </label>
-                <label>
-                  {t("Date", "Date", "日期")}
-                  <input name="date" type="date" required />
-                </label>
-                <label>
-                  {t("Heure", "Time", "时间")}
-                  <input name="time" type="time" required />
-                </label>
-                <button>{t("Ajouter la note", "Add note", "添加记录")}</button>
+                <section className="appointment-picker" aria-labelledby="visit-picker-title">
+                  <div className="appointment-calendar">
+                    <div className="calendar-heading">
+                      <div>
+                        <span className="calendar-kicker">{t("Date et heure", "Date and time", "日期和时间")}</span>
+                        <h3 id="visit-picker-title">{t("Choisir un rendez-vous", "Select an appointment", "选择预约时间")}</h3>
+                      </div>
+                      {visitDate && (
+                        <button className="text-button" type="button" onClick={() => { setVisitDate(""); setVisitTime(""); }}>
+                          {t("Effacer", "Clear", "清除")}
+                        </button>
+                      )}
+                    </div>
+                    <div className="calendar-month-nav">
+                      <button
+                        type="button"
+                        className="calendar-arrow"
+                        aria-label={t("Mois précédent", "Previous month", "上个月")}
+                        disabled={!visitCanGoBack}
+                        onClick={() => setVisitMonth(new Date(visitYear, visitMonthIndex - 1, 1))}
+                      >
+                        <ChevronLeft />
+                      </button>
+                      <strong aria-live="polite">{visitMonthLabel}</strong>
+                      <button
+                        type="button"
+                        className="calendar-arrow"
+                        aria-label={t("Mois suivant", "Next month", "下个月")}
+                        onClick={() => setVisitMonth(new Date(visitYear, visitMonthIndex + 1, 1))}
+                      >
+                        <ChevronRight />
+                      </button>
+                    </div>
+                    <div className="calendar-weekdays" aria-hidden="true">
+                      {visitWeekdays.map((weekday) => <span key={weekday}>{weekday}</span>)}
+                    </div>
+                    <div className="calendar-days" role="grid" aria-label={visitMonthLabel}>
+                      {visitCalendarCells.map((day, index) => {
+                        if (day === null) return <span className="calendar-empty" key={`empty-${index}`} />;
+                        const value = visitIsoDate(day);
+                        const selected = value === visitDate;
+                        return (
+                          <button
+                            key={value}
+                            type="button"
+                            role="gridcell"
+                            className="calendar-day"
+                            aria-label={new Intl.DateTimeFormat(locale, { dateStyle: "full" }).format(new Date(`${value}T12:00:00`))}
+                            aria-selected={selected}
+                            disabled={value < today}
+                            onClick={() => { setVisitDate(value); setVisitTime(""); }}
+                          >
+                            {day}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="calendar-timezone"><Globe2 />{t("Heure de l’Est · America/Toronto", "Eastern Time · America/Toronto", "北美东部时间 · America/Toronto")}</p>
+                  </div>
+                  <div className="appointment-times" aria-label={t("Heure souhaitée", "Preferred time", "期望时间") }>
+                    <span>{visitDate ? formatDate(visitDate) : t("Choisissez d’abord une date", "Choose a date first", "请先选择日期")}</span>
+                    {visitSlots.map((slot) => (
+                      <button
+                        key={slot}
+                        type="button"
+                        aria-pressed={visitTime === slot}
+                        disabled={!visitDate}
+                        onClick={() => setVisitTime(slot)}
+                      >
+                        {formatVisitTime(slot)}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+                <button disabled={!visitDate || !visitTime}>{t("Ajouter la note", "Add note", "添加记录")}</button>
               </form>
             )}
             {visibleVisits.length ? (

@@ -8,9 +8,9 @@ import {
 import { createInvitationHandler } from "./invite-handler.ts";
 
 test("invitation URLs preserve the application path and reject unsafe configuration", () => {
-  assert.deepEqual(invitationConfig("https://example.com/MaisonAVendre"), {
+  assert.deepEqual(invitationConfig("https://example.com/propriete-en-vente"), {
     origin: "https://example.com",
-    redirectTo: "https://example.com/MaisonAVendre/#auth/callback",
+    redirectTo: "https://example.com/propriete-en-vente/#auth/callback",
   });
   assert.equal(
     invitationConfig("http://127.0.0.1:5173").redirectTo,
@@ -163,7 +163,7 @@ function scenario(options: Scenario = {}) {
   const runtime: Parameters<typeof createInvitationHandler>[0] = {
     env: (name) =>
       ({
-        APP_ORIGIN: "https://example.com/MaisonAVendre/",
+        APP_ORIGIN: "https://example.com/propriete-en-vente/",
         SUPABASE_URL: "https://project.supabase.co",
         SUPABASE_SERVICE_ROLE_KEY: "private-test-key",
       })[name],
@@ -204,7 +204,7 @@ test("owner with verified MFA creates an operator and audit through the atomic R
   assert.ok(calls.some((call) => call.name === "getClaims"));
   assert.deepEqual(calls.find((call) => call.name === "invite")?.args, [
     "staff@example.com",
-    { redirectTo: "https://example.com/MaisonAVendre/#auth/callback" },
+    { redirectTo: "https://example.com/propriete-en-vente/#auth/callback" },
   ]);
   assert.deepEqual(calls.find((call) => call.name === "rpc")?.args, [
     "finish_staff_invite",

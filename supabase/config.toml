@@ -1,4 +1,4 @@
-project_id = "maisonavendre"
+project_id = "propriete-en-vente"
 
 [api]
 enabled = true

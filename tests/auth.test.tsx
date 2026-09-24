@@ -95,7 +95,7 @@ describe("authentication boundaries", () => {
   });
   async function waitingSignIn() {
     window.history.replaceState(null, '', '/#register');
-    sessionStorage.setItem('maisonavendre.pending-signup', JSON.stringify({email: 'waiting@example.test', at: Date.now()}));
+    sessionStorage.setItem('propriete-en-vente.pending-signup', JSON.stringify({email: 'waiting@example.test', at: Date.now()}));
     await render();
     const field = container.querySelector<HTMLInputElement>('input[name=password]')!;
     await act(async () => {
@@ -118,7 +118,7 @@ describe("authentication boundaries", () => {
     expect(mock.getUser).not.toHaveBeenCalled();
     expect(window.location.hash).toBe('#dashboard');
     expect(state.user?.id).toBe('waiting');
-    expect(sessionStorage.getItem('maisonavendre.pending-signup')).toBeNull();
+    expect(sessionStorage.getItem('propriete-en-vente.pending-signup')).toBeNull();
     expect(container.querySelector<HTMLInputElement>('input[name=password]')?.value ?? '').toBe('');
   });
   it('keeps an unconfirmed account on the waiting screen with a resend option', async () => {
@@ -140,7 +140,7 @@ describe("authentication boundaries", () => {
     expect(window.location.hash).toBe('#register');
     expect(container.querySelector('[role=alert]')?.textContent).toBe(message);
     expect(container.textContent).not.toContain('Your email has not been confirmed');
-    expect(sessionStorage.getItem('maisonavendre.pending-signup')).not.toContain('test-only-password');
+    expect(sessionStorage.getItem('propriete-en-vente.pending-signup')).not.toContain('test-only-password');
     expect(container.querySelector<HTMLButtonElement>('button[type=submit]')!.disabled).toBe(false);
   });
   it('clears the waiting password when changing the registration email', async () => {
@@ -150,14 +150,14 @@ describe("authentication boundaries", () => {
     await act(async () => change.click());
     expect(container.querySelector<HTMLInputElement>('input[name=password]')!.value).toBe('');
     expect(container.querySelector('input[name=password-confirm]')).not.toBeNull();
-    expect(sessionStorage.getItem('maisonavendre.pending-signup')).toBeNull();
+    expect(sessionStorage.getItem('propriete-en-vente.pending-signup')).toBeNull();
   });
   it('requires a server session before leaving the waiting screen', async () => {
     mock.signIn.mockResolvedValue({data: {session: null}, error: null});
     await waitingSignIn();
     expect(window.location.hash).toBe('#register');
     expect(container.querySelector('[role=alert]')).not.toBeNull();
-    expect(sessionStorage.getItem('maisonavendre.pending-signup')).toContain('waiting@example.test');
+    expect(sessionStorage.getItem('propriete-en-vente.pending-signup')).toContain('waiting@example.test');
   });
   it('uses email verification without QR codes and only opens access after server approval', async () => {
     mock.session=session('owner');
@@ -211,17 +211,17 @@ describe("authentication boundaries", () => {
     expect(container.textContent).toContain("Confirm your email address");
     expect(container.querySelector('form')).not.toBeNull();
     expect(container.querySelector<HTMLInputElement>('input[type=password]')!.value).toBe('');
-    expect(sessionStorage.getItem("maisonavendre.pending-signup")).not.toContain("test-only-password");
+    expect(sessionStorage.getItem("propriete-en-vente.pending-signup")).not.toContain("test-only-password");
     await emit("SIGNED_IN", session("waiting"));
     expect(window.location.hash).toBe("#register");
     const verified = session("waiting"); verified.user.email_confirmed_at = new Date().toISOString();
     await emit("SIGNED_IN", verified);
     expect(window.location.hash).toBe("#dashboard");
-    expect(sessionStorage.getItem("maisonavendre.pending-signup")).toBeNull();
+    expect(sessionStorage.getItem("propriete-en-vente.pending-signup")).toBeNull();
   });
 
   it("restores the waiting screen after refresh and does not report a failed resend as sent", async () => {
-    sessionStorage.setItem("maisonavendre.pending-signup", JSON.stringify({ email: "waiting@example.test", at: Date.now() }));
+    sessionStorage.setItem("propriete-en-vente.pending-signup", JSON.stringify({ email: "waiting@example.test", at: Date.now() }));
     window.history.replaceState(null, "", "/#register");
     mock.resend.mockResolvedValue({ error: { message: "Email rate limit exceeded" } });
     await render();

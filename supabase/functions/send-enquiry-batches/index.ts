@@ -16,9 +16,9 @@ Deno.serve(async request => {
     const content=btoa(Array.from(new TextEncoder().encode(enquiriesCsv(batch.rows)),b=>String.fromCharCode(b)).join(''));
     const response=await fetch('https://api.resend.com/emails',{
       method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json','Idempotency-Key':`enquiry-batch/${batch.id}`},
-      body:JSON.stringify({from,to:[RECIPIENT],subject:`MaisonÀVendre — 10 demandes / enquiries — ${batch.id}`,
+      body:JSON.stringify({from,to:[RECIPIENT],subject:`Propriété En Vente — 10 demandes / enquiries — ${batch.id}`,
         text:`10 new buyer/seller enquiries are attached as a CSV spreadsheet.\n10 nouvelles demandes d’achat/vente sont jointes au format CSV.\n附件是 10 条买卖需求，可用 Excel 打开。\nBatch: ${batch.id}`,
-        attachments:[{filename:`MaisonAVendre-${batch.id}.csv`,content}]}),signal:AbortSignal.timeout(15000),
+        attachments:[{filename:`Propriété En Vente-${batch.id}.csv`,content}]}),signal:AbortSignal.timeout(15000),
     });
     if(!response.ok) throw Error('provider_error');
     const result=await response.json();

@@ -15,7 +15,7 @@ const propertyTypes: PropertyType[] = ["house", "condo", "plex", "commercial"];
 function ListingPhoto({ item, lang, eager = false }: { item: Listing; lang: Language; eager?: boolean }) {
   const c = listingsCopy[lang];
   return <img src={item.image} alt={`${item.real ? publicationCopy[lang].photos : c.photoNote} · ${c.types[item.type]}`} loading={eager ? "eager" : "lazy"} onError={event => {
-    if (!event.currentTarget.src.endsWith("/maisonavendre-hero.png")) event.currentTarget.src = listingFallback;
+    if (!event.currentTarget.src.endsWith("/propriete-en-vente-hero.png")) event.currentTarget.src = listingFallback;
   }} />;
 }
 
