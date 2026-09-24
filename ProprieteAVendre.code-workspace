@@ -1,6 +1,6 @@
 {
   "folders": [
-    { "name": "MaisonÀVendre", "path": "." }
+    { "name": "ProprieteAVendre", "path": "." }
   ],
   "settings": {
     "typescript.tsdk": "node_modules/typescript/lib",

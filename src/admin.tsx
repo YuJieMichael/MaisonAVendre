@@ -27,7 +27,7 @@ import { publicationCopy } from "./publication-copy";
 const copy = {
   fr: {
     title: "Espace administration",
-    eyebrow: "MAISONÀVENDRE · ÉQUIPE",
+    eyebrow: "PROPRIETEAVENDRE · ÉQUIPE",
     intro:
       "Examinez les projets soumis et suivez les décisions de votre équipe.",
     back: "Retour au site",
@@ -145,7 +145,7 @@ const copy = {
   },
   en: {
     title: "Administration",
-    eyebrow: "MAISONÀVENDRE · TEAM",
+    eyebrow: "PROPRIETEAVENDRE · TEAM",
     intro: "Review submitted projects and follow your team’s decisions.",
     back: "Back to website",
     login: "Sign in",
@@ -261,7 +261,7 @@ const copy = {
   },
   zh: {
     title: "管理工作台",
-    eyebrow: "MAISONÀVENDRE · 团队",
+    eyebrow: "PROPRIETEAVENDRE · 团队",
     intro: "审核卖家提交的项目，跟进团队的处理记录。",
     back: "返回网站",
     login: "登录",
@@ -638,7 +638,7 @@ export function AdminPage({ lang }: { lang: Language }) {
         <div className="admin-brand">
           <ShieldCheck size={30} />
           <strong>
-            MaisonÀVendre<small>{t.title}</small>
+            ProprieteAVendre<small>{t.title}</small>
           </strong>
         </div>
         <div className="admin-role">

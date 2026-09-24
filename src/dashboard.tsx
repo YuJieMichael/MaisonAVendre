@@ -249,7 +249,7 @@ export function Dashboard({ lang }: { lang: Language }) {
   const displayedPhotos = sample ? [] : photos;
   const hero =
     displayedPhotos[0]?.url ??
-    `${import.meta.env.BASE_URL}maisonavendre-hero.png`;
+    `${import.meta.env.BASE_URL}proprieteavendre-hero.png`;
   const sampleVisits = [
     { date: "2026-10-03", time: "10:30", name: "Camille R." },
     { date: "2026-10-04", time: "14:00", name: "Alex M." },
@@ -272,7 +272,7 @@ export function Dashboard({ lang }: { lang: Language }) {
         <div className="workspace-label">
           <span className="workspace-monogram">M</span>
           <div>
-            <strong>MaisonÀVendre</strong>
+            <strong>ProprieteAVendre</strong>
             <small>
               {t("ESPACE VENDEUR", "SELLER WORKSPACE", "卖家工作台")}
             </small>
