@@ -638,7 +638,7 @@ export function AdminPage({ lang }: { lang: Language }) {
         <div className="admin-brand">
           <ShieldCheck size={30} />
           <strong>
-            ProprieteAVendre<small>{t.title}</small>
+            Propriété En Vente<small>{t.title}</small>
           </strong>
         </div>
         <div className="admin-role">

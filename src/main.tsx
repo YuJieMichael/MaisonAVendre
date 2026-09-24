@@ -65,12 +65,12 @@ function Brand({ footer = false }: { footer?: boolean }) {
     <a
       href="#top"
       className={`brand ${footer ? "footer-brand" : ""}`}
-      aria-label="ProprieteAVendre"
+      aria-label="Propriété En Vente"
     >
       <span className="brand-mark">
         <House aria-hidden="true" />
       </span>
-      <span>ProprieteAVendre</span>
+      <span>Propriété En Vente</span>
     </a>
   );
 }
@@ -320,7 +320,7 @@ function Home({ lang }: { lang: Language }) {
             <p className="eyebrow">{d.routeEyebrow}</p>
             <h2>{d.routeTitle}</h2>
           </div>
-          <p className="section-note">ProprieteAVendre</p>
+          <p className="section-note">Propriété En Vente</p>
         </div>
         <div className="route-grid">
           {(["seller", "buyer"] as const).map((kind) => (

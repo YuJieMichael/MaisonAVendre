@@ -57,9 +57,9 @@ export function createStaffEmailHandler(runtime: Runtime) {
         if(result==='rate_limited') return reply(429,{error:'rate_limited'});
         if(result!=='ok') return reply(403,{error:'forbidden'});
         const texts={
-          en:[`ProprieteAVendre — administrator verification code`,`Your administrator verification code: ${code}\nExpires in 10 minutes. Do not share this code. If you did not request it, ignore this email.`],
-          fr:[`ProprieteAVendre — code de vérification administrateur`,`Votre code de vérification administrateur : ${code}\nValide pendant 10 minutes. Ne partagez pas ce code. Si vous n’avez pas demandé ce code, ignorez ce courriel.`],
-          zh:[`ProprieteAVendre — 管理员验证码`,`您的管理员验证码：${code}\n10 分钟内有效，请勿向他人提供。如果不是您本人操作，请忽略此邮件。`],
+          en:[`Propriété En Vente — administrator verification code`,`Your administrator verification code: ${code}\nExpires in 10 minutes. Do not share this code. If you did not request it, ignore this email.`],
+          fr:[`Propriété En Vente — code de vérification administrateur`,`Votre code de vérification administrateur : ${code}\nValide pendant 10 minutes. Ne partagez pas ce code. Si vous n’avez pas demandé ce code, ignorez ce courriel.`],
+          zh:[`Propriété En Vente — 管理员验证码`,`您的管理员验证码：${code}\n10 分钟内有效，请勿向他人提供。如果不是您本人操作，请忽略此邮件。`],
         };
         const lang=body.language==='en' || body.language==='zh' ? body.language : 'fr';
         const response=await runtime.fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json','Idempotency-Key':`staff-check/${challengeId}`},body:JSON.stringify({from,to:[user.email],subject:texts[lang][0],text:texts[lang][1]}),signal:AbortSignal.timeout(15000)});

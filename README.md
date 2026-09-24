@@ -1,4 +1,4 @@
-# ProprieteAVendre
+# Propriété En Vente
 
 Québec-wide property discovery, trilingual seller workspace and Supabase backend built with **React, TypeScript, PostgreSQL and Supabase Edge Functions (Deno)**. Browse a clearly labelled sample catalogue, filter and sort properties, then open their details. Editable source includes authentication, private project storage, access rules and staff review.
 
@@ -12,13 +12,13 @@ Plateforme immobilière pour tout le Québec : catalogue de démonstration avec 
 
 [Windows startup guide — English, Français, 中文](docs/local-start.md): install, start, stop and update the website locally.
 
-For VS Code, open `ProprieteAVendre.code-workspace`, then use **Terminal → Run Task** to install dependencies and start the site. / Dans VS Code, ouvrez le fichier workspace puis lancez les tâches du terminal. / 用 VS Code 打开工作区文件，再从终端菜单安装依赖、启动网页。
+For VS Code, open `Propriete-En-Vente.code-workspace`, then use **Terminal → Run Task** to install dependencies and start the site. / Dans VS Code, ouvrez le fichier workspace puis lancez les tâches du terminal. / 用 VS Code 打开工作区文件，再从终端菜单安装依赖、启动网页。
 
 [Guide de démarrage Windows](docs/local-start.md) : installation, démarrage, arrêt et mise à jour du site en local.
 
 [Windows 手动启动说明](docs/local-start.md)：首次安装、以后启动、停止服务和从 GitHub 更新的步骤。
 
-PR merges are counted automatically in [Actions → PR merge count](https://github.com/YuJieMichael/ProprieteAVendre/actions/workflows/merge-count.yml). / Les PR fusionnées sont comptées automatiquement dans Actions. / 合并到 `main` 的 PR 会自动计数，直接 push 不计入。
+PR merges are counted automatically in [Actions → PR merge count](https://github.com/YuJieMichael/Propriete-En-Vente/actions/workflows/merge-count.yml). / Les PR fusionnées sont comptées automatiquement dans Actions. / 合并到 `main` 的 PR 会自动计数，直接 push 不计入。
 
 Use Node.js 22.18+ or a supported newer LTS release.
 

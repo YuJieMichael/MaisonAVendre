@@ -287,7 +287,7 @@ function useHash() {
   return hash;
 }
 
-const pendingSignupKey = "proprieteavendre.pending-signup";
+const pendingSignupKey = "propriete-en-vente.pending-signup";
 function readPendingSignup(): string {
   try {
     const pending = JSON.parse(sessionStorage.getItem(pendingSignupKey) || "null");
@@ -478,12 +478,12 @@ export function MfaPanel({ lang, onVerified }: { lang: Language; onVerified?: ()
       if (factorError) throw factorError;
       const verified = factors.totp.find(factor => factor.status === "verified");
       if (verified) { setFactorId(verified.id); return; }
-      for (const factor of factors.all.filter(item => item.status === "unverified" && item.factor_type === "totp" && item.friendly_name === "ProprieteAVendre administration")) {
+      for (const factor of factors.all.filter(item => item.status === "unverified" && item.factor_type === "totp" && item.friendly_name === "Propriété En Vente administration")) {
         const { error: removeError } = await supabase.auth.mfa.unenroll({ factorId: factor.id });
         if (requestUserId !== currentUserId.current) return;
         if (removeError) throw removeError;
       }
-      const { data, error: enrollError } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "ProprieteAVendre administration" });
+      const { data, error: enrollError } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "Propriété En Vente administration" });
       if (requestUserId !== currentUserId.current) return;
       if (enrollError) throw enrollError;
       setFactorId(data.id);
