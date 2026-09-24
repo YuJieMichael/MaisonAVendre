@@ -15,7 +15,9 @@ import {
   LockKeyhole,
   ExternalLink,
 } from "lucide-react";
-import { useAuth, MfaPanel } from "./auth";
+import { useAuth } from "./auth";
+import { AdminEmailPanel } from "./admin-email";
+import { BuyerEnquiries, buyerInboxCopy } from "./buyer-enquiries";
 import { supabase } from "./lib/supabase";
 import type { Language } from "./seller-copy";
 import "./admin.css";
@@ -388,12 +390,13 @@ type ProjectFile = {
   name: string;
   storage_path: string;
 };
-type Tab = "queue" | "audit" | "invite" | "listings";
+type Tab = "queue" | "audit" | "invite" | "listings" | "buyers";
 
 export function AdminPage({ lang }: { lang: Language }) {
   const t = copy[lang];
   const auth = useAuth();
   const [tab, setTab] = useState<Tab>("queue");
+  const [enquiryRefresh, setEnquiryRefresh] = useState(0);
   const [projects, setProjects] = useState<ReviewProject[]>([]);
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [selected, setSelected] = useState<ReviewProject | null>(null);
@@ -409,7 +412,7 @@ export function AdminPage({ lang }: { lang: Language }) {
   const [filesLoading, setFilesLoading] = useState(false);
   const fetchVersion = useRef(0);
   const fileVersion = useRef(0);
-  const canRead = !!auth.user && !!auth.staffRole && auth.aal === "aal2";
+  const canRead = !!auth.user && !!auth.staffRole && auth.adminVerified;
 
   const refresh = useCallback(async () => {
     if (!supabase || !canRead) return;
@@ -452,7 +455,7 @@ export function AdminPage({ lang }: { lang: Language }) {
     setSelected(null);
     setFiles([]);
     setMessage(null);
-  }, [auth.user?.id, auth.staffRole, auth.aal]);
+  }, [auth.user?.id, auth.staffRole, auth.adminVerified]);
 
   async function selectProject(project: ReviewProject) {
     if (!supabase || busy) return;
@@ -617,10 +620,10 @@ export function AdminPage({ lang }: { lang: Language }) {
     );
   if (!auth.user) return gate(t.loginTitle, t.loginText, true);
   if (!auth.staffRole) return gate(t.noAccess, t.noAccessText);
-  if (auth.aal !== "aal2")
+  if (!auth.adminVerified)
     return (
       <main className="admin-gate">
-        <MfaPanel lang={lang} onVerified={() => void auth.refreshAuth()} />
+        <AdminEmailPanel lang={lang} />
         <a href="#">{t.back}</a>
       </main>
     );
@@ -643,6 +646,7 @@ export function AdminPage({ lang }: { lang: Language }) {
           <span>{auth.user.email}</span>
         </div>
         <nav aria-label={t.title}>
+          <button className={tab === "buyers" ? "active" : ""} onClick={() => setTab("buyers")}>{buyerInboxCopy[lang].title}</button>
           <button className={tab === "listings" ? "active" : ""} onClick={() => setTab("listings")}>{publicationCopy[lang].review}</button>
           <button
             className={tab === "queue" ? "active" : ""}
@@ -685,6 +689,7 @@ export function AdminPage({ lang }: { lang: Language }) {
             className="admin-secondary"
             onClick={() => {
               setMessage(null);
+              setEnquiryRefresh(value => value + 1);
               void refresh();
             }}
             disabled={loading || busy}
@@ -702,6 +707,7 @@ export function AdminPage({ lang }: { lang: Language }) {
           </p>
         )}
         {tab === "listings" && <ListingReview key={auth.user.id} lang={lang} />}
+        {tab === "buyers" && <BuyerEnquiries key={auth.user.id} lang={lang} refreshKey={enquiryRefresh} />}
         {tab === "queue" && (
           <>
             <div className="admin-panel">

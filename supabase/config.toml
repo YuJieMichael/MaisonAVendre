@@ -54,6 +54,10 @@ verify_enabled = true
 # support asymmetric JWT signing keys. Never remove those checks.
 verify_jwt = false
 
+[functions.staff-email-verification]
+# Identity and signed JWT claims are validated inside every request.
+verify_jwt = false
+
 [functions.submit-enquiry]
 # Public intake: validated body, origin check and database rate limits.
 verify_jwt = false

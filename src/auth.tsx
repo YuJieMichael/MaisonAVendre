@@ -16,6 +16,7 @@ type AuthState = {
   loading: boolean;
   staffRole: StaffRole;
   aal: Assurance;
+  adminVerified: boolean;
   error: string | null;
   callbackPending: boolean;
   callbackError: string | null;
@@ -83,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(backendConfigured);
   const [staffRole, setStaffRole] = useState<StaffRole>(null);
   const [aal, setAal] = useState<Assurance>(null);
+  const [adminVerified, setAdminVerified] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [callbackPending, setCallbackPending] = useState(false);
   const [callbackError, setCallbackError] = useState<string | null>(null);
@@ -96,6 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(next);
     setStaffRole(null);
     setAal(null);
+    setAdminVerified(false);
     setError(null);
     if (!next || !supabase) { setLoading(false); return; }
     setLoading(true);
@@ -108,6 +111,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (assuranceResult.error) throw assuranceResult.error;
       if (!mounted.current || version !== generation.current) return;
       const role = roleResult.data;
+      const access = role === 'owner' || role === 'operator'
+        ? await supabase.rpc('get_my_staff_access') : { data: false, error: null };
+      if (!mounted.current || version !== generation.current) return;
+      if (access.error) throw access.error;
+      setAdminVerified(access.data === true);
       setStaffRole(role === "owner" || role === "operator" ? role : null);
       const level = assuranceResult.data.currentLevel;
       setAal(level === "aal1" ? "aal1" : level === "aal2" ? "aal2" : null);
@@ -150,6 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(next);
       setStaffRole(null);
       setAal(null);
+      setAdminVerified(false);
       setLoading(Boolean(next));
       // Do not await other auth calls inside the auth event callback (client lock).
       window.setTimeout(() => { void applySession(next, version); }, 0);
@@ -175,15 +184,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [applySession, refreshAuth]);
 
+  useEffect(() => {
+    if (!supabase || !session || !staffRole) return;
+    let active = true;
+    const client = supabase;
+    const check = async () => {
+      try {
+        const { data, error: checkError } = await client.rpc('get_my_staff_access');
+        if (active) setAdminVerified(!checkError && data === true);
+      } catch { if (active) setAdminVerified(false); }
+    };
+    const timer = window.setInterval(() => { void check(); }, 30000);
+    const visible = () => { if (document.visibilityState === 'visible') void check(); };
+    document.addEventListener('visibilitychange', visible);
+    return () => { active = false; window.clearInterval(timer); document.removeEventListener('visibilitychange', visible); };
+  }, [session?.access_token, staffRole]);
+
   const signOut = useCallback(async () => {
     if (!supabase) return;
     const { error: signOutError } = await supabase.auth.signOut({ scope: "local" });
     if (signOutError) { setError(signOutError.message); throw signOutError; }
     ++generation.current;
     setSession(null); setStaffRole(null); setAal(null); setError(null);
+    setAdminVerified(false);
     setRecoverySession(false); setInvitationSession(false); setLoading(false);
   }, []);
-  return <AuthContext.Provider value={{ user: session?.user ?? null, session, loading, staffRole, aal, error,
+  return <AuthContext.Provider value={{ user: session?.user ?? null, session, loading, staffRole, aal, adminVerified, error,
     callbackPending, callbackError, recoverySession, invitationSession, signOut, refreshAuth,
     clearRecovery: () => { setRecoverySession(false); setInvitationSession(false); },
   }}>{children}</AuthContext.Provider>;
@@ -212,7 +238,7 @@ const copy = {
     callback: "Vérification de votre lien…", invalid: "Ce lien n’est pas valide ou a expiré. Demandez un nouveau lien.", retry: "Réessayer", issue: "La demande n’a pas pu être traitée.",
     privacy: "Votre compte est personnel. Aucune souscription payante n’est requise pour le créer.",
     mfaTitle: "Protégez votre accès administrateur", mfaText: "La double authentification est obligatoire pour accéder à l’administration.",
-    mfaSetup: "Activer la double authentification", mfaScan: "Scannez ce QR code avec votre application d’authentification, puis saisissez son code à 6 chiffres.",
+    mfaSetup: "Activer la double authentification", mfaScan: "Dans Google Authenticator ou Microsoft Authenticator, ajoutez un compte et scannez ce QR code. N’utilisez pas l’appareil photo du téléphone. Saisissez ensuite le code à 6 chiffres ici. Vous pouvez aussi utiliser la clé manuelle ci-dessous.",
     mfaCode: "Code à 6 chiffres", mfaVerify: "Vérifier et continuer", mfaExisting: "Saisissez le code de votre application d’authentification.", mfaSecret: "Clé de configuration manuelle", mfaComplete: "Votre accès est vérifié.", needLogin: "Connectez-vous pour continuer.",
   },
   en: {
@@ -229,7 +255,7 @@ const copy = {
     linkFailed: "Link sign-in could not finish", linkHelp: "This link cannot finish signing you in with this browser. If you just confirmed your email, try signing in with your password. To reset your password, request a new link here and open it in the same browser, on this same website.",
     callback: "Verifying your link…", invalid: "This link is invalid or has expired. Please request a new link.", retry: "Try again", issue: "We couldn’t complete your request.",
     privacy: "Your account is personal. Creating one does not require a paid subscription.",
-    mfaTitle: "Protect your administrator access", mfaText: "Two-factor authentication is required to access administration.", mfaSetup: "Enable two-factor authentication", mfaScan: "Scan this QR code with your authenticator app, then enter its 6-digit code.", mfaCode: "6-digit code", mfaVerify: "Verify and continue", mfaExisting: "Enter the code from your authenticator app.", mfaSecret: "Manual setup key", mfaComplete: "Your access is verified.", needLogin: "Sign in to continue.",
+    mfaTitle: "Protect your administrator access", mfaText: "Two-factor authentication is required to access administration.", mfaSetup: "Enable two-factor authentication", mfaScan: "In Google Authenticator or Microsoft Authenticator, add an account and scan this QR code. Do not use the phone camera app. Enter the 6-digit code here. You can also use the manual setup key below.", mfaCode: "6-digit code", mfaVerify: "Verify and continue", mfaExisting: "Enter the code from your authenticator app.", mfaSecret: "Manual setup key", mfaComplete: "Your access is verified.", needLogin: "Sign in to continue.",
   },
   zh: {
     waitingTitle: "等待邮箱验证", waitingText: "请前往邮箱，点击最新邮件中的验证链接。邮箱验证成功后，会在打开链接的浏览器中自动进入账号。", waitingOther: "如果当前标签页共享登录状态，这里也会自动进入；若在其他浏览器验证，返回这里登录即可。没收到时也请检查垃圾邮件。", verifiedLogin: "我已验证邮箱，前往登录", resend: "重新发送验证邮件", resent: "发送请求已成功，请检查邮箱并使用最新链接。", changeEmail: "修改邮箱地址",
@@ -245,7 +271,7 @@ const copy = {
     linkFailed: "链接登录未完成", linkHelp: "这个链接无法在当前浏览器完成登录。如果刚刚验证了邮箱，请尝试用原密码登录。若要重置密码，请在这里重新申请链接，并在同一个浏览器、同一个网站中打开，不要在本地版和线上版之间切换。",
     callback: "正在验证您的链接…", invalid: "此链接无效或已过期，请重新申请链接。", retry: "重试", issue: "请求未能完成。",
     privacy: "账号仅供本人使用。创建账号无需购买套餐。",
-    mfaTitle: "保护您的管理员账号", mfaText: "进入管理后台前，需要完成双重验证。", mfaSetup: "启用双重验证", mfaScan: "使用身份验证器应用扫描此二维码，然后输入应用中的 6 位验证码。", mfaCode: "6 位验证码", mfaVerify: "验证并继续", mfaExisting: "请输入身份验证器应用中的验证码。", mfaSecret: "手动设置密钥", mfaComplete: "您的访问身份已验证。", needLogin: "请先登录账号。",
+    mfaTitle: "保护您的管理员账号", mfaText: "进入管理后台前，需要完成双重验证。", mfaSetup: "启用双重验证", mfaScan: "请打开 Google Authenticator 或 Microsoft Authenticator，选择添加账号并扫描二维码，不要使用手机相机。将应用显示的 6 位码填到这里；也可以使用下方的手动设置密钥。", mfaCode: "6 位验证码", mfaVerify: "验证并继续", mfaExisting: "请输入身份验证器应用中的验证码。", mfaSecret: "手动设置密钥", mfaComplete: "您的访问身份已验证。", needLogin: "请先登录账号。",
   },
 };
 

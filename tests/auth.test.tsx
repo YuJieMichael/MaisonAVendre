@@ -11,11 +11,13 @@ const mock = vi.hoisted(() => ({
   rpc: vi.fn(), getSession: vi.fn(), signOut: vi.fn(), assurance: vi.fn(),
   factors: vi.fn(), enroll: vi.fn(), verify: vi.fn(), exchange: vi.fn(), setSession: vi.fn(),
   signUp: vi.fn(), resend: vi.fn(), signIn: vi.fn(),
+  invoke: vi.fn(),
 }));
 vi.mock("../src/lib/supabase", () => ({
   get backendConfigured() { return mock.configured; },
   get supabase() { return mock.configured ? {
     rpc: mock.rpc,
+    functions: { invoke: mock.invoke },
     auth: {
       getSession: mock.getSession, signOut: mock.signOut,
       onAuthStateChange: (callback: (event: string, session: Session | null) => void) => {
@@ -31,6 +33,7 @@ vi.mock("../src/lib/supabase", () => ({
 }));
 import { AuthPage, AuthProvider, MfaPanel, useAuth } from "../src/auth";
 import { AdminPage } from "../src/admin";
+import { AdminEmailPanel } from "../src/admin-email";
 
 let root: Root;
 let container: HTMLDivElement;
@@ -58,6 +61,7 @@ beforeEach(() => {
   mock.exchange.mockReset(); mock.setSession.mockReset(); mock.enroll.mockReset(); mock.verify.mockReset();
   mock.callbacks.clear(); mock.session = null; mock.configured = true;
   mock.rpc.mockResolvedValue({ data: null, error: null });
+  mock.invoke.mockReset();
   mock.getSession.mockImplementation(async () => ({ data: { session: mock.session }, error: null }));
   mock.assurance.mockResolvedValue({ data: { currentLevel: "aal1" }, error: null });
   mock.signOut.mockResolvedValue({ error: null });
@@ -68,6 +72,39 @@ beforeEach(() => {
 afterEach(async () => { await act(async () => root.unmount()); container.remove(); });
 
 describe("authentication boundaries", () => {
+  it('uses email verification without QR codes and only opens access after server approval', async () => {
+    mock.session=session('owner');
+    let approved=false;
+    mock.rpc.mockImplementation(async name=>({data:name==='get_my_staff_role'?'owner':approved,error:null}));
+    mock.invoke.mockImplementation(async (_name,{body})=>body.action==='send'
+      ? {data:{ok:true,challengeId:'challenge'},error:null}
+      : {data:{ok:false,error:'invalid_code'},error:null});
+    await render(<AdminEmailPanel lang="en"/>);
+    expect(container.querySelector('img')).toBeNull();
+    expect(state.adminVerified).toBe(false);
+    await act(async()=>container.querySelector<HTMLButtonElement>('button')!.click());
+    expect(container.textContent).toContain('Email sent');
+    expect(mock.invoke.mock.calls[0][1].body).toEqual({action:'send',language:'en'});
+    await act(async()=>container.querySelector('form')!.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})));
+    expect(state.adminVerified).toBe(false);
+    expect(container.textContent).toContain('incorrect, expired');
+    approved=true;
+    mock.invoke.mockResolvedValue({data:{ok:true},error:null});
+    await act(async()=>container.querySelector('form')!.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})));
+    expect(state.adminVerified).toBe(true);
+    await emit('SIGNED_OUT',null);
+    expect(state.adminVerified).toBe(false);
+  });
+  it('does not claim an email was sent when the provider is unconfigured',async()=>{
+    mock.session=session('owner');
+    mock.rpc.mockImplementation(async name=>({data:name==='get_my_staff_role'?'owner':false,error:null}));
+    mock.invoke.mockResolvedValue({data:null,error:{context:{json:async()=>({error:'email_not_configured'})}}});
+    await render(<AdminEmailPanel lang="en"/>);
+    await act(async()=>container.querySelector<HTMLButtonElement>('button')!.click());
+    expect(container.textContent).toContain('not configured yet');
+    expect(container.querySelector('input[name=email-code]')).toBeNull();
+    expect(state.adminVerified).toBe(false);
+  });
   it("replaces successful signup with a waiting screen and advances only for the matching verified session", async () => {
     window.history.replaceState(null, "", "/#register");
     await render();
@@ -188,7 +225,7 @@ describe("authentication boundaries", () => {
     await act(async () => retry!.click());
     await flush();
     expect(state.error).toBeNull();
-    expect(container.textContent).toContain("Protect your administrator access");
+    expect(container.textContent).toContain("Verify your administrator access");
   });
 
   it("does not claim a successful logout when the server rejects it", async () => {
