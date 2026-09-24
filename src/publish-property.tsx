@@ -3,13 +3,18 @@ import type { Language } from './seller-copy';
 import { publicationCopy } from './publication-copy';
 import { backendConfigured } from './lib/supabase';
 import { parseProperty, PHOTO_LIMIT, type PublicProperty } from '../supabase/functions/_shared/listing-input';
+import { VIDEO_LIMIT, parseVideo } from '../supabase/functions/_shared/listing-video';
+import {videoCopy} from './video-copy';
 import './enquiry.css';
 import './publication.css';
 
 export const publicationEnabled = backendConfigured && import.meta.env.VITE_LISTING_PUBLICATION_ENABLED === 'true';
 type Draft = { property:PublicProperty; contact:{name:string;email:string;phone:string}; consent:boolean; website:string };
 export function PublishProperty({lang}:{lang:Language}) {
-  const c=publicationCopy[lang];
+  const c=publicationCopy[lang],v=videoCopy[lang];
+  const [video,setVideo]=useState('');
+  const [videoConsent,setVideoConsent]=useState(false);
+  const [videoError,setVideoError]=useState(false);
   const [photos,setPhotos]=useState<string[]>([]);
   const [draft,setDraft]=useState<Draft|null>(null);
   const [preview,setPreview]=useState(false);
@@ -28,12 +33,19 @@ export function PublishProperty({lang}:{lang:Language}) {
       setPhotos(current=>[...current,...added]);
     } catch {setError('error');} finally {setLoadingPhotos(false);}
   }
+  async function addVideo(file:File|undefined) {
+    if(!file)return;
+    setVideoError(false);
+    if(!['video/mp4','video/webm'].includes(file.type)||!file.size||file.size>VIDEO_LIMIT){setVideoError(true);return;}
+    setLoadingPhotos(true);
+    try{const raw=await new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=reject;reader.readAsDataURL(file);});parseVideo(raw);setVideo(raw);setVideoConsent(false);}catch{setVideoError(true);}finally{setLoadingPhotos(false);}
+  }
   function prepare(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();setError(null);
     try {
       const f=Object.fromEntries(new FormData(event.currentTarget));
       const property=parseProperty({...f,price:Number(f.price),beds:Number(f.beds),baths:Number(f.baths),area:Number(f.area),parking:f.parking==='on',outdoor:f.outdoor==='on'});
-      if(!String(f.name).trim()||!photos.length||f.consent!=='on')throw Error();
+      if(!String(f.name).trim()||!photos.length||f.consent!=='on'||(video&&!videoConsent))throw Error();
       setDraft({property,contact:{name:String(f.name).trim(),email:String(f.email).trim(),phone:String(f.phone)},consent:true,website:String(f.website||'')});
       setPreview(true);window.scrollTo({top:0,behavior:'instant'});
     } catch {setError('invalid');}
@@ -41,11 +53,11 @@ export function PublishProperty({lang}:{lang:Language}) {
   async function submit() {
     if(sending.current||!draft)return;
     if(!publicationEnabled){setError('unavailable');return;}
-    const body=JSON.stringify({...draft,photos});
+    const body=JSON.stringify({...draft,photos,video,videoConsent});
     if(body!==request.current.body)request.current={body,id:crypto.randomUUID()};
     sending.current=true;setBusy(true);setError(null);
     try {
-      const response=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-listing`,{method:'POST',headers:{'Content-Type':'application/json',apikey:import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY},body:JSON.stringify({...JSON.parse(body),requestId:request.current.id}),signal:AbortSignal.timeout(60000)});
+      const response=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-listing`,{method:'POST',headers:{'Content-Type':'application/json',apikey:import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY},body:JSON.stringify({...JSON.parse(body),requestId:request.current.id}),signal:AbortSignal.timeout(120000)});
       const result=await response.json();if(!response.ok||result.ok!==true)throw Error();
       setReference(request.current.id);
     } catch {setError('error');} finally {sending.current=false;setBusy(false);}
@@ -54,7 +66,7 @@ export function PublishProperty({lang}:{lang:Language}) {
   return <section className="enquiry-shell publication-form"><a href="#proprietes">← {c.listings}</a><h1>{c.title}</h1><p>{c.intro}</p>
     {!publicationEnabled&&<p className="catalogue-notice" role="status">{c.unavailable}</p>}
     {error&&<p role="alert">{c[error]}</p>}
-    {preview&&draft&&<div className="enquiry-card"><p className="eyebrow">{c.localPreview}</p><h2>{draft.property.title}</h2><p>{draft.property.city} · {draft.property.postal}</p><strong>{new Intl.NumberFormat(lang==='zh'?'zh-CN':`${lang}-CA`,{style:'currency',currency:'CAD',maximumFractionDigits:0}).format(draft.property.price)}</strong><div className="publication-photos">{photos.map((photo,i)=><img key={i} src={photo} alt={`${c.photos} ${i+1}`} />)}</div><p className="publication-description">{draft.property.description}</p><p>{c.beds}: {draft.property.beds} · {c.baths}: {draft.property.baths} · {c.area}: {draft.property.area}</p><p>{c.mode}: {draft.property.mode==='broker'?c.broker:c.hybrid}</p><p>{draft.property.parking?c.parking:''} {draft.property.outdoor?c.outdoor:''}</p><div className="publication-actions"><button type="button" onClick={()=>{setPreview(false);setError(null);}} disabled={busy}>{c.edit}</button><button type="button" className="wide-cta" onClick={()=>void submit()} disabled={busy}>{busy?c.sending:c.submit}</button></div></div>}
+    {preview&&draft&&<div className="enquiry-card"><p className="eyebrow">{c.localPreview}</p><h2>{draft.property.title}</h2><p>{draft.property.city} · {draft.property.postal}</p><strong>{new Intl.NumberFormat(lang==='zh'?'zh-CN':`${lang}-CA`,{style:'currency',currency:'CAD',maximumFractionDigits:0}).format(draft.property.price)}</strong><div className="publication-photos">{photos.map((photo,i)=><img key={i} src={photo} alt={`${c.photos} ${i+1}`} />)}</div>{video&&<video src={video} controls playsInline preload="metadata" style={{width:"100%",maxHeight:420}}/>}<p className="publication-description">{draft.property.description}</p><p>{c.beds}: {draft.property.beds} · {c.baths}: {draft.property.baths} · {c.area}: {draft.property.area}</p><p>{c.mode}: {draft.property.mode==='broker'?c.broker:c.hybrid}</p><p>{draft.property.parking?c.parking:''} {draft.property.outdoor?c.outdoor:''}</p><div className="publication-actions"><button type="button" onClick={()=>{setPreview(false);setError(null);}} disabled={busy}>{c.edit}</button><button type="button" className="wide-cta" onClick={()=>void submit()} disabled={busy}>{busy?c.sending:c.submit}</button></div></div>}
     <form className="enquiry-card" hidden={preview} onSubmit={prepare}>
       <fieldset disabled={busy||loadingPhotos}><legend>{c.public}</legend><div className="enquiry-grid">
         <label className="enquiry-full">{c.headline} *<input name="title" required maxLength={120}/></label>
@@ -68,6 +80,7 @@ export function PublishProperty({lang}:{lang:Language}) {
         <label className="enquiry-full">{c.description} *<textarea name="description" rows={5} maxLength={3000} required/></label>
       </div><div className="publication-checks"><label><input type="checkbox" name="parking"/>{c.parking}</label><label><input type="checkbox" name="outdoor"/>{c.outdoor}</label></div></fieldset>
       <fieldset disabled={busy||loadingPhotos}><legend>{c.photos} *</legend><p>{c.photoHint}</p><input type="file" accept="image/jpeg,image/png,image/webp" multiple aria-label={c.photos} onChange={e=>{void addPhotos(Array.from(e.target.files||[]));e.target.value='';}}/>{loadingPhotos&&<p role="status">{c.loading}</p>}<div className="publication-photos">{photos.map((photo,i)=><figure key={i}><img src={photo} alt={`${c.photos} ${i+1}`}/><button type="button" onClick={()=>setPhotos(current=>current.filter((_,index)=>index!==i))}>{c.remove} {i+1}</button></figure>)}</div></fieldset>
+      <fieldset disabled={busy||loadingPhotos}><legend>{v.label}</legend><p>{v.hint}</p><input type="file" accept="video/mp4,video/webm" aria-label={v.label} onChange={e=>{void addVideo(e.target.files?.[0]);e.target.value='';}}/>{videoError&&<p role="alert">{v.invalid}</p>}{video&&<><video controls playsInline preload="metadata" src={video} style={{width:'100%',maxHeight:360}}/><button type="button" onClick={()=>{setVideo('');setVideoConsent(false);setVideoError(false);}}>{c.remove}</button><label className="publication-consent"><input type="checkbox" required checked={videoConsent} onChange={e=>setVideoConsent(e.target.checked)}/>{v.consent}</label></>}</fieldset>
       <fieldset disabled={busy||loadingPhotos}><legend>{c.private}</legend><p>{c.privacy}</p><div className="enquiry-grid"><label>{c.name} *<input name="name" required maxLength={120} autoComplete="name"/></label><label>{c.email} *<input name="email" required type="email" maxLength={254} autoComplete="email"/></label><label>{c.phone}<input name="phone" type="tel" maxLength={40} autoComplete="tel"/></label></div><label className="publication-consent"><input name="consent" type="checkbox" required/>{c.consent} *</label></fieldset>
       <div className="enquiry-trap" aria-hidden="true"><label>Website<input name="website" tabIndex={-1} autoComplete="off"/></label></div><button type="submit" className="wide-cta" disabled={busy||loadingPhotos}>{c.preview}</button>
     </form>

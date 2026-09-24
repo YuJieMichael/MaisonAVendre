@@ -17,6 +17,7 @@ export type Listing = {
   image: string;
   real?: boolean;
   photos?: string[];
+  video?: string;
   description?: string;
   neighbourhood?: string;
 };
