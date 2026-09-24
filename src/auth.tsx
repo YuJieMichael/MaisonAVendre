@@ -39,13 +39,15 @@ let callbackKey = "";
 let callbackRecoveryObserved = false;
 function exchangeCallback() {
   const url = new URL(window.location.href);
-  const fragment = url.hash.replace(/^#/, "");
+  // Supabase appends #access_token even when redirect_to already has a hash route.
+  // Accept existing emailed links as well as ordinary root-fragment callbacks.
+  const fragment = url.hash.replace(/^#/, "").replace(/^auth\/callback[#?]/, "");
   const fragmentParams = new URLSearchParams(fragment.includes("?") ? fragment.split("?").slice(1).join("?") : fragment);
   const code = url.searchParams.get("code") || fragmentParams.get("code");
   const error = url.searchParams.get("error_description") || fragmentParams.get("error_description");
   const accessToken = fragmentParams.get("access_token");
   const refreshToken = fragmentParams.get("refresh_token");
-  if (!code && !accessToken && !error) return null;
+  if (!code && !accessToken && !refreshToken && !error) return null;
   const key = code || accessToken || error || "";
   if (callbackExchange && callbackKey === key) return callbackExchange;
   callbackKey = key;
@@ -313,6 +315,22 @@ export function AuthPage({ lang }: { lang: Language }) {
   const [pendingEmail, setPendingEmail] = useState(readPendingSignup);
   const [resendWait, setResendWait] = useState(0);
   const waiting = mode === "register" && Boolean(pendingEmail);
+  const verificationCopy = {
+    en: {check:'Check email verification', missing:'No verified sign-in was detected here yet. Open the latest confirmation email and try again. If you confirmed in another browser, you can sign in here manually.', unconfirmed:'Your email has not been confirmed. Open the latest confirmation email before signing in.'},
+    fr: {check:'Vérifier la confirmation du courriel', missing:'Aucune connexion vérifiée détectée ici pour le moment. Ouvrez le dernier courriel de confirmation puis réessayez. Si vous avez confirmé dans un autre navigateur, vous pouvez vous connecter ici manuellement.', unconfirmed:'Votre courriel n’est pas encore confirmé. Ouvrez le dernier courriel de confirmation avant de vous connecter.'},
+    zh: {check:'检查邮箱验证状态', missing:'当前浏览器尚未检测到已验证的登录状态。请打开最新验证邮件后重试。如果已在其他浏览器验证，可以手动在这里登录。', unconfirmed:'邮箱尚未验证成功，请先打开最新邮件完成验证，再登录。'},
+  }[lang];
+  const checkVerification = async () => {
+    if (!supabase || busy) return;
+    setBusy(true);
+    try {
+      const {data,error:checkError}=await supabase.auth.getUser();
+      if (!checkError && data.user?.email_confirmed_at && data.user.email?.toLowerCase()===pendingEmail.toLowerCase()) {
+        await auth.refreshAuth(); savePendingSignup(''); setPendingEmail(''); window.location.hash='dashboard';
+      } else window.alert(verificationCopy.missing);
+    } catch { window.alert(verificationCopy.missing); }
+    finally {setBusy(false);}
+  };
   useEffect(() => { setError(""); setNotice(""); setPassword(""); setConfirm(""); }, [mode]);
   useEffect(() => {
     if (!resendWait) return;
@@ -349,7 +367,8 @@ export function AuthPage({ lang }: { lang: Language }) {
         const { error: resultError } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (resultError?.code === "email_not_confirmed") {
           const address = email.trim(); savePendingSignup(address); setPendingEmail(address);
-          setPassword(""); setConfirm(""); window.location.hash = "register";
+          setPassword(""); setConfirm(""); setError(verificationCopy.unconfirmed);
+          window.alert(verificationCopy.unconfirmed);
           return;
         }
         if (resultError) throw resultError;
@@ -392,7 +411,8 @@ export function AuthPage({ lang }: { lang: Language }) {
           <p className="auth-subtitle">{c.waitingOther}</p>
           {error && <div className="auth-error" role="alert">{error}</div>}
           {notice && <div className="auth-notice" role="status">{notice}</div>}
-          <a className="auth-primary" href="#login" onClick={() => setEmail(pendingEmail)}>{c.verifiedLogin}<ArrowRight size={18} /></a>
+          <button className="auth-primary" type="button" disabled={busy} onClick={() => void checkVerification()}>{verificationCopy.check}<ArrowRight size={18} /></button>
+          <a className="auth-back" href="#login" onClick={() => setEmail(pendingEmail)}>{c.back}</a>
           <button className="auth-text-button" type="button" disabled={busy || resendWait > 0} onClick={() => { void resend(); }}>{c.resend}{resendWait > 0 ? ` (${resendWait}s)` : ""}</button>
           <button className="auth-text-button" type="button" disabled={busy} onClick={() => { savePendingSignup(""); setPendingEmail(""); setNotice(""); setError(""); }}>{c.changeEmail}</button>
         </>

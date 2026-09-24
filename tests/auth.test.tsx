@@ -12,6 +12,7 @@ const mock = vi.hoisted(() => ({
   factors: vi.fn(), enroll: vi.fn(), verify: vi.fn(), exchange: vi.fn(), setSession: vi.fn(),
   signUp: vi.fn(), resend: vi.fn(), signIn: vi.fn(),
   invoke: vi.fn(),
+  getUser: vi.fn(),
 }));
 vi.mock("../src/lib/supabase", () => ({
   get backendConfigured() { return mock.configured; },
@@ -20,6 +21,7 @@ vi.mock("../src/lib/supabase", () => ({
     functions: { invoke: mock.invoke },
     auth: {
       getSession: mock.getSession, signOut: mock.signOut,
+      getUser: mock.getUser,
       onAuthStateChange: (callback: (event: string, session: Session | null) => void) => {
         mock.callbacks.add(callback);
         return { data: { subscription: { unsubscribe: () => mock.callbacks.delete(callback) } } };
@@ -62,6 +64,7 @@ beforeEach(() => {
   mock.callbacks.clear(); mock.session = null; mock.configured = true;
   mock.rpc.mockResolvedValue({ data: null, error: null });
   mock.invoke.mockReset();
+  mock.getUser.mockResolvedValue({data:{user:null},error:null});
   mock.getSession.mockImplementation(async () => ({ data: { session: mock.session }, error: null }));
   mock.assurance.mockResolvedValue({ data: { currentLevel: "aal1" }, error: null });
   mock.signOut.mockResolvedValue({ error: null });
@@ -72,6 +75,35 @@ beforeEach(() => {
 afterEach(async () => { await act(async () => root.unmount()); container.remove(); });
 
 describe("authentication boundaries", () => {
+  it('accepts tokens appended after the callback hash route and removes credentials from the URL',async()=>{
+    const confirmed=session('nested-confirmed');
+    mock.setSession.mockImplementation(async()=>{mock.session=confirmed;return {data:{session:confirmed},error:null};});
+    window.history.replaceState(null,'','/#auth/callback#access_token=nested-test-token&refresh_token=nested-test-refresh&type=signup');
+    await render(undefined,true);
+    expect(mock.setSession).toHaveBeenCalledTimes(1);
+    expect(mock.setSession).toHaveBeenCalledWith({access_token:'nested-test-token',refresh_token:'nested-test-refresh'});
+    expect(window.location.hash).toBe('#dashboard');
+    expect(window.location.href).not.toContain('nested-test');
+  });
+  it('keeps a nested recovery callback on the password reset route',async()=>{
+    const recovered=session('nested-recovery');
+    mock.setSession.mockResolvedValue({data:{session:recovered},error:null});
+    window.history.replaceState(null,'','/#auth/callback#access_token=recovery-test-token&refresh_token=recovery-test-refresh&type=recovery');
+    await render();
+    expect(window.location.hash).toBe('#reset-password');expect(state.recoverySession).toBe(true);
+  });
+  it('shows a dialog and keeps the waiting page when verification is not detected',async()=>{
+    const alert=vi.spyOn(window,'alert').mockImplementation(()=>{});
+    window.history.replaceState(null,'','/#register');
+    sessionStorage.setItem('maisonavendre.pending-signup',JSON.stringify({email:'waiting@example.test',at:Date.now()}));
+    try {
+      await render();
+      const button=Array.from(container.querySelectorAll('button')).find(b=>b.textContent==='Check email verification');
+      expect(button).toBeDefined();
+      await act(async()=>button!.click());
+      expect(alert).toHaveBeenCalled();expect(window.location.hash).toBe('#register');expect(state.user).toBeNull();
+    }finally{alert.mockRestore();}
+  });
   it('uses email verification without QR codes and only opens access after server approval', async () => {
     mock.session=session('owner');
     let approved=false;
