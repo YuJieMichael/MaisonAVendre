@@ -174,14 +174,11 @@ function App() {
               </button>
             ))}
           </div>
-          <a className="account-button outline" href="#vendre">
-            {
-              {
-                fr: "Mon projet de vente",
-                en: "Start selling",
-                zh: "填写卖房需求",
-              }[lang]
-            }
+          <a className="header-login" href={auth.user ? "#dashboard" : "#login"} onClick={() => setMenu(false)}>
+            <KeyRound size={17} aria-hidden="true" />
+            {auth.user
+              ? { fr: "Mon espace", en: "My account", zh: "我的账号" }[lang]
+              : { fr: "Connexion", en: "Sign in", zh: "登录" }[lang]}
           </a>
           <button
             className="menu-button"
