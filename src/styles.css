@@ -745,3 +745,21 @@ html[lang="zh-Hans"] h2 {
     gap: 8px;
   }
 }
+
+/* Keep account access visible on the homepage, including small screens. */
+.header-login{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:0 15px;border-radius:9px;background:#123f3e;color:#fff;font-size:.85rem;font-weight:700;white-space:nowrap}
+.header-login:hover{background:#215652}
+.header-login:focus-visible{outline:3px solid #c97a20;outline-offset:3px}
+@media(max-width:1200px){
+  .site-header{gap:16px}
+  .menu-button{display:grid;place-items:center}
+  .main-nav{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;gap:18px;padding:24px;background:#fff;border-bottom:1px solid #d7dfda}
+  .main-nav.is-open{display:flex}
+}
+@media(max-width:540px){
+  .site-header{height:auto;min-height:72px;flex-wrap:wrap;padding:12px 18px;gap:10px}
+  .site-header .brand > span:last-child{display:inline}
+  .header-actions{width:100%;gap:10px}
+  .header-actions .language-switch{margin-right:auto}
+  .header-login{min-height:40px;padding:0 12px}
+}
