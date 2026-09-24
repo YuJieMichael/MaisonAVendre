@@ -84,7 +84,7 @@ export function EnquiryForm({ kind, lang, onContinue }: { kind: 'buyer' | 'selle
           <label>{kind === 'buyer' ? t.city : t.sellerCity}<input name="city" maxLength={200} /></label>
           <label>{t.type}<select name="propertyType">{['','house','condo','plex','commercial'].map((v,i)=><option key={v} value={v}>{t.types[i]}</option>)}</select></label>
           {kind === 'buyer' ? <><label>{t.min}<input name="budgetMin" type="number" min="0" max="1000000000" step="1" /></label><label>{t.max}<input name="budgetMax" type="number" min="0" max="1000000000" step="1" /></label></> : <><label>{t.address}<input name="address" maxLength={300} autoComplete="street-address" /></label><label>{t.price}<input name="expectedPrice" type="number" min="0" max="1000000000" step="1" /></label></>}
-          <label>{t.timing}<input name="timeline" maxLength={200} /></label>
+          <label>{t.timing}<input name="timeline" type="date" /></label>
           <label className="enquiry-full">{t.needs}<textarea name="requirements" rows={4} maxLength={3000} /></label>
         </div></fieldset>
         {kind === 'seller' && service === 'hybrid' && <fieldset disabled={state === 'sending'}><legend>{options.assistance}</legend><p className="enquiry-privacy">{options.hint}</p><div className="enquiry-services">{assistanceIds.map((id, index) => <label key={id}><input type="checkbox" name="assistanceChoice" value={id} checked={assistance.includes(id)} onChange={event => setAssistance(current => event.target.checked ? id === 'unsure' ? ['unsure'] : [...current.filter(value => value !== 'unsure'), id] : current.filter(value => value !== id))} /><span>{options.services[index]}</span></label>)}</div></fieldset>}
