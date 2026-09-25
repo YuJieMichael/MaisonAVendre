@@ -23,6 +23,7 @@ import {
   X,
 } from "lucide-react";
 import { sellerCopy, type Language } from "./seller-copy";
+import { QuebecCityOptions, QUEBEC_CITY_LIST_ID } from "./quebec-cities";
 import { useProject, type Details, type Plan } from "./project";
 import { ProjectStatus } from "./project-status";
 
@@ -277,11 +278,12 @@ export function SellerFlow({ lang }: { lang: Language }) {
                         pattern: ".*\\S.*",
                       })}
                     </div>
-                    {input("city", d.city, "text", true, {
+                    <QuebecCityOptions>{input("city", d.city, "text", true, {
                       autoComplete: "address-level2",
+                      list: QUEBEC_CITY_LIST_ID,
                       maxLength: 100,
                       pattern: ".*\\S.*",
-                    })}
+                    })}</QuebecCityOptions>
                     {input("postal", d.postal, "text", true, {
                       autoComplete: "postal-code",
                       pattern:

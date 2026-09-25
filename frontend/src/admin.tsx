@@ -70,7 +70,7 @@ const copy = {
     return: "Demander des corrections",
     required: "Une explication est nécessaire pour demander des corrections.",
     approved:
-      "Dossier approuvé. Aucune publication publique automatique n’est effectuée.",
+      "Dossier approuvé. Ses renseignements restent privés. Une annonce publique soumise séparément est publiée dès son approbation dans la section des annonces publiques.",
     returned: "Demande de corrections enregistrée.",
     conflict:
       "La décision n’a pas été enregistrée. Le dossier a pu changer ou vos droits ont expiré. La liste a été actualisée ; ouvrez sa dernière version avant de réessayer.",
@@ -191,7 +191,7 @@ const copy = {
     return: "Request changes",
     required: "Explain the corrections before returning this project.",
     approved:
-      "Project approved. This does not automatically publish a public listing.",
+      "Project approved. Its details remain private. A separately submitted public listing goes live as soon as it is approved in Public listings.",
     returned: "The request for changes has been saved.",
     conflict:
       "Your decision was not saved. The project may have changed or your permissions expired. The list was refreshed; open the latest version before trying again.",
@@ -307,7 +307,7 @@ const copy = {
     approve: "审核通过",
     return: "退回修改",
     required: "退回修改时必须填写原因。",
-    approved: "已审核通过。本阶段不会自动公开发布房源。",
+    approved: "项目审核通过，资料仍保存在卖家私有工作台。单独提交的公开房源在“公开房源”审核页通过后会立即上线。",
     returned: "已保存修改要求。",
     conflict:
       "审核未保存。项目可能已被修改，或你的权限已失效。列表已刷新，请打开最新版本后重试。",
