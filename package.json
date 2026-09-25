@@ -4,14 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --configLoader native --host 127.0.0.1",
-    "build": "tsc --noEmit && vite build --configLoader native",
-    "preview": "vite preview --configLoader native --host 127.0.0.1",
+    "dev": "npm --prefix frontend run dev --",
+    "build": "npm --prefix frontend run build",
+    "preview": "npm --prefix frontend run preview --",
     "test": "npm run test:ui && npm run test:database && npm run test:functions && npm run test:merge-count",
-    "test:ui": "vitest run --configLoader native tests",
+    "test:ui": "npm --prefix frontend test",
     "test:database": "node supabase/tests/run-database.mjs",
     "test:functions": "node --test supabase/functions/_shared/invitation.test.ts supabase/functions/_shared/staff-email.test.ts",
-    "test:merge-count": "node --test .github/tests/merge-count.test.mjs"
+    "test:merge-count": "node --test .github/tests/merge-count.test.mjs",
+    "test:backend": "npm --prefix backend test"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.0",
