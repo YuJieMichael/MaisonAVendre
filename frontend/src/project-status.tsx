@@ -11,6 +11,7 @@ export function ProjectStatus({ lang, review = false }: { lang: Language; review
     CONFLICT: t('Ce dossier a été modifié ailleurs. Rechargez la version du serveur avant de continuer.', 'This project changed elsewhere. Load the server version before continuing.', '项目已在其他页面被修改。请载入云端版本后继续，避免覆盖他人的更改。'),
     ACCESS: t('Votre session ou vos permissions ont changé. Reconnectez-vous.', 'Your session or permissions changed. Please sign in again.', '登录状态或权限已变化，请重新登录。'),
     VALIDATION: t('Vérifiez les coordonnées, le code postal et les champs obligatoires.', 'Check contact details, postal code and required fields.', '请检查联系方式、邮编和必填资料。'),
+    SLOT_TAKEN: t('Ce créneau figure déjà dans votre calendrier. Choisissez-en un autre.', 'That time is already on this calendar. Choose another slot.', '这个时间已在日历中安排，请选择其他时段。'),
     PHOTO_REQUIRED: t('Ajoutez au moins une photo avant de demander une vérification.', 'Add at least one photo before submitting for review.', '提交审核前，请先上传至少一张房屋照片。'),
     FILE_LIMIT: t('Vérifiez le type, la taille et le nombre de fichiers (10 Mo maximum chacun).', 'Check file type, count and size (10 MB maximum each).', '请检查文件类型、数量和大小（每个最多 10 MB）。'),
     CONFIG: t('Le serveur n’est pas encore connecté.', 'The backend is not connected yet.', '后端尚未连接。'),

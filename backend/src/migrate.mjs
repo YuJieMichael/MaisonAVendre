@@ -8,6 +8,8 @@ export async function migrate(db){
     await db.query(await readFile(new URL('../migrations/schema.sql',import.meta.url),'utf8'));
     const {rows}=await db.query("select version from workspace.schema_versions where version='001'");
     if(!rows.length){await db.query(await readFile(new URL('../migrations/validators.sql',import.meta.url),'utf8'));await db.query("insert into workspace.schema_versions(version) values('001')");}
+    const visitSlots=await db.query("select version from workspace.schema_versions where version='002'");
+    if(!visitSlots.rows.length){await db.query(await readFile(new URL('../migrations/visit-slot-unique.sql',import.meta.url),'utf8'));await db.query("insert into workspace.schema_versions(version) values('002')");}
     await db.query('commit');
   }catch(error){await db.query('rollback');throw error;}
 }

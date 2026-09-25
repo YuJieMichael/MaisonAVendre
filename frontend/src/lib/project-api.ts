@@ -69,6 +69,7 @@ function client() {
 export function errorCode(error: unknown): string {
   const value = error as { message?: string; code?: string };
   const text = `${value?.code ?? ""} ${value?.message ?? ""}`;
+  if (/VISIT_SLOT_TAKEN/i.test(text)) return "SLOT_TAKEN";
   if (/revision|conflict|40001/i.test(text)) return "CONFLICT";
   if (/PHOTO_REQUIRED|photo.*required|photo.*least/i.test(text))
     return "PHOTO_REQUIRED";

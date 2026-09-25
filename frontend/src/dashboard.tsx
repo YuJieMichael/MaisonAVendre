@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   ClipboardList,
   Download,
   Eye,
@@ -29,7 +30,7 @@ import {
   Video,
   X,
 } from "lucide-react";
-import { useProject } from "./project";
+import { isVisitSlotTaken, useProject } from "./project";
 import { sellerCopy, type Language } from "./seller-copy";
 import { ProjectStatus } from "./project-status";
 
@@ -87,6 +88,11 @@ const navCopy = {
     "文件中心",
     "可选服务",
   ],
+};
+const navGroups = {
+  fr: { property: "Propriété", activity: "Acheteurs et visites", files: "Documents" },
+  en: { property: "Property", activity: "Buyers and visits", files: "Documents" },
+  zh: { property: "房源管理", activity: "买家与交易", files: "资料" },
 };
 const serviceText = {
   fr: [
@@ -200,6 +206,7 @@ export function Dashboard({ lang }: { lang: Language }) {
     changes_requested: t("À modifier", "Changes requested", "待修改"),
   }[project?.status ?? "draft"];
   const names = navCopy[lang];
+  const groups = navGroups[lang];
   const address = sample
     ? t("Votre maison au Québec", "Your home in Québec", "您的魁北克房屋")
     : form.address ||
@@ -284,6 +291,7 @@ export function Dashboard({ lang }: { lang: Language }) {
     zh: ["一", "二", "三", "四", "五", "六", "日"],
   }[lang];
   const visitSlots = ["09:00", "10:30", "12:00", "13:30", "15:00", "16:30", "18:00"];
+  const occupiedVisitSlots = new Set(visitSlots.filter((slot) => isVisitSlotTaken(visibleVisits, visitDate, slot)));
   const formatVisitTime = (value: string) => {
     const [hour, minute] = value.split(":").map(Number);
     return new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" }).format(
@@ -304,23 +312,24 @@ export function Dashboard({ lang }: { lang: Language }) {
           </div>
         </div>
         <nav aria-label={t("Espace vendeur", "Seller workspace", "卖家工作台")}>
-          {sections.map((key, i) => {
-            const Icon = icons[i];
-            return (
-              <a
-                key={key}
-                href={`#${isDemo ? "demo" : `projects/${project?.id}`}${key === "overview" ? "" : `/${key}`}`}
-                className={section === key ? "active" : ""}
-                aria-current={section === key ? "page" : undefined}
-              >
-                <Icon />
-                {names[i]}
-                {key === "services" && services.length > 0 && (
-                  <span className="nav-count">{services.length}</span>
-                )}
-              </a>
-            );
-          })}
+          <a href={`#${isDemo ? "demo" : `projects/${project?.id}`}`} className={section === "overview" ? "active" : ""} aria-current={section === "overview" ? "page" : undefined}><LayoutDashboard />{names[0]}</a>
+          <details className="workspace-nav-group" open={section === "property" || section === "services"}>
+            <summary><House />{groups.property}<ChevronDown className="workspace-nav-chevron" /></summary>
+            <div>{(["property", "services"] as const).map((key) => {
+              const i = sections.indexOf(key);
+              const Icon = icons[i];
+              return <a key={key} href={`#${isDemo ? "demo" : `projects/${project?.id}`}/${key}`} className={section === key ? "active" : ""} aria-current={section === key ? "page" : undefined}><Icon />{names[i]}{key === "services" && services.length > 0 && <span className="nav-count">{services.length}</span>}</a>;
+            })}</div>
+          </details>
+          <details className="workspace-nav-group" open={section === "buyers" || section === "visits" || section === "offers"}>
+            <summary><Users />{groups.activity}<ChevronDown className="workspace-nav-chevron" /></summary>
+            <div>{(["buyers", "visits", "offers"] as const).map((key) => {
+              const i = sections.indexOf(key);
+              const Icon = icons[i];
+              return <a key={key} href={`#${isDemo ? "demo" : `projects/${project?.id}`}/${key}`} className={section === key ? "active" : ""} aria-current={section === key ? "page" : undefined}><Icon />{names[i]}</a>;
+            })}</div>
+          </details>
+          <a href={`#${isDemo ? "demo" : `projects/${project?.id}`}/documents`} className={section === "documents" ? "active" : ""} aria-current={section === "documents" ? "page" : undefined}><FolderOpen />{names[5]}</a>
         </nav>
         {!isDemo&&<a className="workspace-back" href="#projects" onClick={async e=>{e.preventDefault();if(await saveNow())location.hash='projects';}}><ChevronLeft/>{t('Tous les projets','All projects','全部项目')}</a>}
         <div className="sidebar-help">
@@ -384,7 +393,7 @@ export function Dashboard({ lang }: { lang: Language }) {
               : t("Créer mon dossier", "Create my project", "建立我的项目")}
           </a>
         </div>
-        <div className="workspace-demo">
+        {section === "overview" && <div className="workspace-demo">
           <Info />
           <span>{localNote}</span>
           <a className="text-button" href={isDemo ? "#dashboard" : "#demo"} target={isDemo ? undefined : "_blank"} rel="noopener">
@@ -392,8 +401,8 @@ export function Dashboard({ lang }: { lang: Language }) {
               ? t("Ouvrir mon espace", "Open my workspace", "进入我的工作台")
               : t("Voir un exemple", "See an example", "查看示例项目")}
           </a>
-        </div>
-        <ProjectStatus lang={lang} review />
+        </div>}
+        {section === "overview" && <ProjectStatus lang={lang} review />}
         {sample && (
           <p className="sample-label">
             {t(
@@ -911,6 +920,10 @@ export function Dashboard({ lang }: { lang: Language }) {
                   e.preventDefault();
                   const data = new FormData(e.currentTarget);
                   if (!visitDate || !visitTime) return;
+                  if (isVisitSlotTaken(visibleVisits, visitDate, visitTime)) {
+                    setMessage(t("Ce créneau figure déjà dans votre calendrier. Choisissez-en un autre.", "That time is already on this calendar. Choose another slot.", "这个时间已在日历中安排，请选择其他时段。"));
+                    return;
+                  }
                   setVisits((old) => [
                     ...old,
                     {
@@ -994,12 +1007,14 @@ export function Dashboard({ lang }: { lang: Language }) {
                   </div>
                   <div className="appointment-times" aria-label={t("Heure souhaitée", "Preferred time", "期望时间") }>
                     <span>{visitDate ? formatDate(visitDate) : t("Choisissez d’abord une date", "Choose a date first", "请先选择日期")}</span>
+                    {occupiedVisitSlots.size > 0 && <small className="booked-slot-hint">{t("Les heures grisées sont déjà réservées.", "Disabled times are already scheduled.", "灰色时段已被安排。")}</small>}
                     {visitSlots.map((slot) => (
                       <button
                         key={slot}
                         type="button"
                         aria-pressed={visitTime === slot}
-                        disabled={!visitDate}
+                        disabled={!visitDate || occupiedVisitSlots.has(slot)}
+                        title={occupiedVisitSlots.has(slot) ? t("Déjà réservé", "Already scheduled", "已安排") : undefined}
                         onClick={() => setVisitTime(slot)}
                       >
                         {formatVisitTime(slot)}
