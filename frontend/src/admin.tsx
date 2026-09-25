@@ -23,6 +23,7 @@ import {apiUrl,apiResult,projectRequest} from './lib/project-api';
 import type { Language } from "./seller-copy";
 import "./admin.css";
 import { ListingReview } from "./listing-review";
+import { BrokerReview } from "./brokers";
 
 const copy = {
   fr: {
@@ -49,6 +50,7 @@ const copy = {
     queue: "Centre d’examen",
     projectReviews: "Dossiers vendeurs",
     listingReviews: "Annonces publiques",
+    brokerApplications: "Vérification des courtiers",
     audit: "Journal des opérations",
     invite: "Inviter un membre",
     refresh: "Actualiser",
@@ -70,7 +72,7 @@ const copy = {
     return: "Demander des corrections",
     required: "Une explication est nécessaire pour demander des corrections.",
     approved:
-      "Dossier approuvé. Aucune publication publique automatique n’est effectuée.",
+      "Dossier approuvé. Ses renseignements restent privés. Une annonce publique soumise séparément est publiée dès son approbation dans la section des annonces publiques.",
     returned: "Demande de corrections enregistrée.",
     conflict:
       "La décision n’a pas été enregistrée. Le dossier a pu changer ou vos droits ont expiré. La liste a été actualisée ; ouvrez sa dernière version avant de réessayer.",
@@ -170,6 +172,7 @@ const copy = {
     queue: "Review center",
     projectReviews: "Seller projects",
     listingReviews: "Public listings",
+    brokerApplications: "Broker verification",
     audit: "Activity log",
     invite: "Invite a member",
     refresh: "Refresh",
@@ -191,7 +194,7 @@ const copy = {
     return: "Request changes",
     required: "Explain the corrections before returning this project.",
     approved:
-      "Project approved. This does not automatically publish a public listing.",
+      "Project approved. Its details remain private. A separately submitted public listing goes live as soon as it is approved in Public listings.",
     returned: "The request for changes has been saved.",
     conflict:
       "Your decision was not saved. The project may have changed or your permissions expired. The list was refreshed; open the latest version before trying again.",
@@ -289,6 +292,7 @@ const copy = {
     queue: "审核中心",
     projectReviews: "卖家项目",
     listingReviews: "公开房源",
+    brokerApplications: "经纪认证",
     audit: "操作记录",
     invite: "邀请成员",
     refresh: "刷新",
@@ -307,7 +311,7 @@ const copy = {
     approve: "审核通过",
     return: "退回修改",
     required: "退回修改时必须填写原因。",
-    approved: "已审核通过。本阶段不会自动公开发布房源。",
+    approved: "项目审核通过，资料仍保存在卖家私有工作台。单独提交的公开房源在“公开房源”审核页通过后会立即上线。",
     returned: "已保存修改要求。",
     conflict:
       "审核未保存。项目可能已被修改，或你的权限已失效。列表已刷新，请打开最新版本后重试。",
@@ -402,7 +406,7 @@ type ProjectFile = {
   name: string;
   storage_path: string;
 };
-type Tab = "queue" | "audit" | "invite" | "buyers";
+type Tab = "queue" | "audit" | "invite" | "buyers" | "brokers";
 type ReviewTab = "projects" | "listings";
 
 export function AdminPage({ lang }: { lang: Language }) {
@@ -674,6 +678,9 @@ export function AdminPage({ lang }: { lang: Language }) {
             <button className={tab === "buyers" ? "active" : ""} onClick={() => setTab("buyers")}>
               {buyerInboxCopy[lang].title}
             </button>
+            <button className={tab === "brokers" ? "active" : ""} onClick={() => setTab("brokers")}>
+              <ShieldCheck size={18} />{t.brokerApplications}
+            </button>
           </div>
           <div className="admin-nav-section">
             <span className="admin-nav-heading">{t.management}</span>
@@ -729,6 +736,7 @@ export function AdminPage({ lang }: { lang: Language }) {
           </p>
         )}
         {tab === "buyers" && <BuyerEnquiries key={auth.user.id} lang={lang} refreshKey={enquiryRefresh} />}
+        {tab === "brokers" && <BrokerReview key={auth.user.id} lang={lang} />}
         {tab === "queue" && (
           <>
             <div className="admin-review-tabs" role="tablist" aria-label={t.queue}>

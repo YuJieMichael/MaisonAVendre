@@ -1,6 +1,7 @@
 import { useRef, useState, type FormEvent } from 'react';
 import type { Language } from './seller-copy';
 import { publicationCopy } from './publication-copy';
+import { QuebecCityOptions, QUEBEC_CITY_LIST_ID } from './quebec-cities';
 import { backendConfigured } from './lib/supabase';
 import { parseProperty, type PublicProperty } from '../../supabase/functions/_shared/listing-input';
 import { prepareListingPhoto, type PhotoError } from './lib/listing-photo';
@@ -75,7 +76,7 @@ export function PublishProperty({lang}:{lang:Language}) {
     <form className="enquiry-card" hidden={preview} onSubmit={prepare}>
       <fieldset disabled={busy||loadingPhotos}><legend>{c.public}</legend><div className="enquiry-grid">
         <label className="enquiry-full">{c.headline} *<input name="title" required maxLength={120}/></label>
-        <label>{c.city} *<input name="city" required maxLength={100}/></label><label>{c.district}<input name="district" maxLength={120}/></label>
+        <QuebecCityOptions><label>{c.city} *<input name="city" list={QUEBEC_CITY_LIST_ID} autoComplete="address-level2" required maxLength={100}/></label></QuebecCityOptions><label>{c.district}<input name="district" maxLength={120}/></label>
         <label>{c.postal} *<input name="postal" required maxLength={7} pattern="[GgHhJj][0-9][A-Za-z] ?[0-9][A-Za-z][0-9]" placeholder="G1R 2L3"/></label>
         <label>{c.price} *<input name="price" type="number" min="1" max="1000000000" step="1" required/></label>
         <label>{c.type} *<select name="type">{['house','condo','plex','commercial'].map((v,i)=><option value={v} key={v}>{c.types[i]}</option>)}</select></label>

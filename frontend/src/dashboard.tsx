@@ -403,6 +403,12 @@ export function Dashboard({ lang }: { lang: Language }) {
           </a>
         </div>}
         {section === "overview" && <ProjectStatus lang={lang} review />}
+        {section === "overview" && project?.status === "approved" && !isDemo && (
+          <section className="approved-next-step" aria-labelledby="approved-next-title">
+            <div><span>{t("Étape suivante", "Next step", "下一阶段")}</span><h2 id="approved-next-title">{t("Préparer une annonce publique", "Prepare a public listing", "准备公开房源")}</h2><p>{t("Votre dossier privé est vérifié. Choisissez les informations et photos à rendre publiques, puis envoyez l’annonce à l’examen séparément.", "Your private project has been reviewed. Choose which details and photos to make public, then submit the listing for its own review.", "您的私有项目已审核通过。您可以选择要公开的资料和照片，另行提交公开房源审核。")}</p></div>
+            <a href="#publier">{t("开始准备房源", "Prepare listing", "开始准备房源")}<ArrowRight /></a>
+          </section>
+        )}
         {sample && (
           <p className="sample-label">
             {t(
@@ -1319,6 +1325,21 @@ export function Dashboard({ lang }: { lang: Language }) {
                   "选择仅代表服务意向，不会产生订单或付款。",
                 )}
               </p>
+              <button
+                className="service-next-step"
+                type="button"
+                disabled={busy}
+                onClick={async () => {
+                  if (await saveNow()) go("property");
+                }}
+              >
+                {t(
+                  "Continuer vers les renseignements",
+                  "Continue to property details",
+                  "下一步：完善房屋资料",
+                )}
+                <ArrowRight />
+              </button>
             </section>
           </>
         )}

@@ -23,13 +23,9 @@ import {
   X,
 } from "lucide-react";
 import { sellerCopy, type Language } from "./seller-copy";
+import { QuebecCityOptions, QUEBEC_CITY_LIST_ID } from "./quebec-cities";
 import { useProject, type Details, type Plan } from "./project";
 import { ProjectStatus } from "./project-status";
-
-const dateToday = () => {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-};
 
 export function SellerFlow({ lang }: { lang: Language }) {
   const d = sellerCopy[lang];
@@ -277,11 +273,12 @@ export function SellerFlow({ lang }: { lang: Language }) {
                         pattern: ".*\\S.*",
                       })}
                     </div>
-                    {input("city", d.city, "text", true, {
+                    <QuebecCityOptions>{input("city", d.city, "text", true, {
                       autoComplete: "address-level2",
+                      list: QUEBEC_CITY_LIST_ID,
                       maxLength: 100,
                       pattern: ".*\\S.*",
-                    })}
+                    })}</QuebecCityOptions>
                     {input("postal", d.postal, "text", true, {
                       autoComplete: "postal-code",
                       pattern:
@@ -404,8 +401,6 @@ export function SellerFlow({ lang }: { lang: Language }) {
                         <option value="zh">中文</option>
                       </select>
                     </label>
-                    {input("date", d.date, "date", false, { min: dateToday() })}
-                    {select("time", d.time, d.times, false)}
                     <label className="field full-field">
                       <span>{d.notes}</span>
                       <textarea
