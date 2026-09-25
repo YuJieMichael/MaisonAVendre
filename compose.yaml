@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: workspace
+      POSTGRES_DB: workspace
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a database password in .env}
+    volumes:
+      - project-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U workspace -d workspace"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  migrate:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql://workspace:${POSTGRES_PASSWORD}@postgres:5432/workspace
+    command: [node, src/migrate.mjs]
+    depends_on:
+      postgres: {condition: service_healthy}
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://workspace:${POSTGRES_PASSWORD}@postgres:5432/workspace
+      SUPABASE_URL: ${VITE_SUPABASE_URL:?Set your existing Supabase project URL}
+      SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY:?Set the public Supabase key}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3100}
+      PORT: 3101
+      NODE_ENV: production
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+        VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY}
+        VITE_PROJECT_API_URL: /api
+        VITE_ENQUIRY_ENABLED: ${VITE_ENQUIRY_ENABLED:-false}
+        VITE_LISTING_PUBLICATION_ENABLED: ${VITE_LISTING_PUBLICATION_ENABLED:-false}
+    ports: ["127.0.0.1:3100:80"]
+    restart: unless-stopped
+    depends_on:
+      backend: {condition: service_healthy}
+volumes:
+  project-data:
+

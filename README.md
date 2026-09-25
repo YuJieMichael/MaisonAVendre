@@ -1,120 +1,66 @@
 # Propriété En Vente
 
-Québec-wide property discovery, trilingual seller workspace and Supabase backend built with **React, TypeScript, PostgreSQL and Supabase Edge Functions (Deno)**. Browse a clearly labelled sample catalogue, filter and sort properties, then open their details. Editable source includes authentication, private project storage, access rules and staff review.
+English · Français · 中文
 
-Plateforme immobilière pour tout le Québec : catalogue de démonstration avec filtres et fiches détaillées, espace vendeur trilingue et backend Supabase. Le code source est disponible ; chaque nouvelle installation doit renseigner sa connexion Supabase.
+A trilingual Québec property website with a project workspace inspired by SmartDepanneur: a compact white sidebar, blue actions, project list, search/status filters, and separate project details. French is the default language.
 
-产品方向：卖家自主推进，再按需要增加摄影、视频、市场分析、咨询或经纪帮助。服务范围为整个魁北克省，价格待定。
+Une plateforme immobilière québécoise trilingue avec une liste de projets, création de projet et dossiers indépendants. Chaque compte peut gérer plusieurs propriétés. Les données existantes restent dans le service Supabase configuré.
 
-本机已连接开发用 Supabase 项目，连接信息保存在不提交 Git 的 `.env.local`。新下载的源码仍需按照 [后端接入指南](docs/backend-setup.md) 配置自己的环境；没有配置时，账号入口会明确显示暂不可用。实际部署与待办记录见 [开发环境状态](docs/current-setup.md)。
+支持一个账号管理多个房屋项目：项目列表 → 新建项目 → 项目详情／编辑。后台采用 SmartDepanneur 风格的白色侧栏、蓝色按钮和表格布局。
 
-## 本地运行 / Run locally
+## Run locally / Démarrage local / 本地启动
 
-[Windows startup guide — English, Français, 中文](docs/local-start.md): install, start, stop and update the website locally.
-
-For VS Code, open `Propriete-En-Vente.code-workspace`, then use **Terminal → Run Task** to install dependencies and start the site. / Dans VS Code, ouvrez le fichier workspace puis lancez les tâches du terminal. / 用 VS Code 打开工作区文件，再从终端菜单安装依赖、启动网页。
-
-[Guide de démarrage Windows](docs/local-start.md) : installation, démarrage, arrêt et mise à jour du site en local.
-
-[Windows 手动启动说明](docs/local-start.md)：首次安装、以后启动、停止服务和从 GitHub 更新的步骤。
-
-PR merges are counted automatically in [Actions → PR merge count](https://github.com/YuJieMichael/Propriete-En-Vente/actions/workflows/merge-count.yml). / Les PR fusionnées sont comptées automatiquement dans Actions. / 合并到 `main` 的 PR 会自动计数，直接 push 不计入。
-
-Use Node.js 22.18+ or a supported newer LTS release.
+Requires Node.js 22.18+ and npm.
 
 ```sh
 npm ci
+npm --prefix frontend ci
+npm --prefix backend ci
+```
+
+Copy `frontend/.env.example` to `frontend/.env.local`, then enter the existing browser-safe Supabase URL/key. Never use a service-role key in frontend variables.
+
+```sh
 npm run dev
+npm run build
 ```
 
-Open the local address printed by Vite. The seller journey is at `/#vendre`, the private dashboard at `/#dashboard`, and project editing at `/#vendre/edit`. Customers must sign in to use their real workspace. `/#demo` is a separate, clearly labelled example; `/#admin` is the invited staff interface.
+The frontend build is written to `dist/`. Routes: `#projects` (sign-in required), `#projects/<id>/overview`, `#projects/<id>/edit`, `#admin` (verified staff), `#demo` (labelled fictional example), `#proprietes` (public catalogue), `#publier` (public listing submission).
 
-Property discovery is at `/#acheter`; detail links use `/#propriete/demo-01`. Filters stay in the URL across refreshes and detail navigation. The 12 listings, prices and dates are fictional; stock photographs are illustrative. Browsing never reads private seller projects. Remote images fall back to the bundled homepage photo if unavailable.
+## Runtime modes / Modes / 运行方式
 
-For real account functionality, create `.env.local` using `.env.example` and supply only your Supabase project URL and browser-safe publishable key. See the [setup guide](docs/backend-setup.md). Never put a service-role/secret key in a `VITE_` variable. Restart Vite after changing environment settings.
+- **Managed website:** leave `VITE_PROJECT_API_URL` empty. Projects/files use the existing Supabase database and storage, preserving current accounts and data. Apply all numbered migrations including `202609250007_multiple_projects.sql` before enabling the new project UI.
+- **Independent project API:** set `VITE_PROJECT_API_URL=/api` for the Docker deployment. React → Nginx → Express → PostgreSQL. Projects, private files and review audit events live in the independent database. Existing Supabase Auth still verifies accounts and staff access. Public listings, enquiries, invitations and email remain on Supabase.
+
+The Docker database starts empty. Changing the API setting does **not** copy existing projects or files. This is not an offline, fully self-hosted replacement for Supabase. See [deployment and migration guide](docs/project-workspace.md).
+
+模式说明：现有线上站继续使用原账号和数据；独立工程已经提供，但需要服务器才能运行。独立项目数据库与原网站数据库是分开的，切换前必须另行迁移数据。邮件服务配置不属于本次架构升级的完成项。
+
+## Verification / Vérification / 检查
 
 ```sh
+npm test
+npm run test:backend
 npm run build
-npm run preview
 ```
 
-The build checks TypeScript and generates `dist/`. Relative asset paths support GitHub Pages repository subdirectories. Serve the entire `dist/` directory with a static host; do not open it via `file://`.
+UI tests use simulated services. Database and API integration tests use disposable PGlite, the production SQL and real local HTTP requests; identity is mocked. They do not send emails or replace a real server smoke test. Docker startup has not been verified on this workstation because Docker is unavailable.
 
-## 当前功能 / Included
-
-- Reconstructed homepage with the existing hero image, three language dictionaries, green/gold styling, value input and buyer/seller tabs.
-- French, English and Chinese switcher; changing language preserves seller inputs.
-- **Avec courtier / With a broker / 有经纪服务**: broker support and fees by mandate.
-- **Sans courtier / Without a broker / 无经纪自售**: professional photography, video, qualified market analysis and listing presentation.
-- Register / verify email / sign in / recover password. Staff access additionally requires TOTP MFA.
-- Choose service → property details → contact details and optional availability → save → seller dashboard.
-- Address, city, Canadian postal-code validation, property type, desired price, existing broker and sale timeline.
-- Private cloud photo storage with upload/removal; up to 8 JPG, PNG or WebP images, 10 MB per file.
-- Contact details, communication language, preferred date/time, validation and editable review.
-- Seller dashboard: overview, property, buyers, viewings, offers, documents, optional services and support mode.
-- Clearly labelled fictional example data; the user's own unpublished project shows no invented performance figures.
-- Project data, viewing notes, service interests and support preference persist in the signed-in account after a successful cloud save. Auto-save status and explicit conflict handling protect against stale browser tabs.
-- Example buyer filtering/status changes and example offer details remain demo-only. Customer data has no invented enquiries or offers.
-- Private document centre: up to 10 PDF/JPG/PNG/WebP files, 10 MB each, with authorized download and removal.
-- Complete a project and add a photo to request internal review. Invited MFA staff may approve or request changes, with audit records. Approval does not publish private data.
-- Platform owners may invite operators through a protected TypeScript Edge Function; customers cannot assign themselves staff permissions.
-- Responsive layout and keyboard-accessible controls.
-
-## 部署状态与范围 / Deployment status and boundaries
-
-**Backend source is included; a live Supabase project, migration/function deployment, Auth/SMTP settings and a configured frontend build are still required.** This repository does not establish a production service by itself. Once connected, real customer details and files are transmitted to the private backend and remain there after refreshing. Supabase Auth persists the login session in the browser; signing out clears this device's session.
-
-The separate `/#demo` workspace uses labelled fictional examples. Demo selections are temporary, and real uploads are unavailable there. A demonstration never substitutes for a successful server save.
-
-- All optional service prices show **pricing to be confirmed**. Selection records service interest, not an order. Switching support records a preference, not a brokerage mandate.
-- No payment processing, confirmed booking, real public listing publication, buyer account, enquiry feed or offer-submission system is implemented. Property search currently operates on the explicitly labelled demonstration catalogue.
-- The homepage contact form validates inputs but explicitly says nothing was sent.
-- Brokerage and self-sale presentation services are separate. This UI is not a compliant service agreement.
-- Some homepage marketing was retained from the published site. Before production, verify service claims, broker identity/licence, company information, privacy/terms and personal-data collection notices. Footer legal labels are placeholders, not completed policy pages.
-- Uploading this repository does **not** update the existing `chatgpt.site` website. A frontend deployment and its build environment must be configured separately.
-
-## 后端设置与检查 / Backend setup and checks
-
-- [普通用户接入步骤](docs/backend-setup.md): create a Supabase project, apply SQL, configure email, set browser keys and deploy the invite function.
-- [管理员设置](docs/admin-setup.md): bootstrap the verified owner account, enable MFA and invite operators.
-- [数据库契约](supabase/docs/database-contract.md): tables, RPC arguments, storage rules and review transitions.
-
-```sh
-npm run build
-node supabase/tests/run-database.mjs
-node --experimental-strip-types --test supabase/functions/_shared/invitation.test.ts
-npx vitest run tests/auth.test.tsx --configLoader native
-```
-
-Database assertions run against disposable PGlite with mocked Auth/Storage schemas. Auth and invitation tests use simulated dependencies. They do not create cloud accounts or send emails. Real email delivery, Storage upload limits and private downloads, password recovery, staff invitations and backup restoration require a configured staging smoke test. Never run `supabase/tests/bootstrap.sql` against a hosted Supabase project.
-
-## 文件结构 / Source map
+## Source / Code / 工程目录
 
 ```text
-src/main.tsx          Homepage, navigation, language state
-src/home-copy.json    Recovered trilingual homepage text
-src/seller-flow.tsx   Seller flow, form validation, private photo uploads
-src/seller-copy.ts    Trilingual seller-flow text
-src/auth.tsx         Account screens, sessions, email callback and staff MFA
-src/project.tsx      Serialized cloud saves, media operations and demo separation
-src/project-status.tsx Save/conflict state and review submission
-src/lib/project-api.ts Supabase RPC and private Storage client
-src/admin.tsx        Staff project review, private media and operator invitations
-src/dashboard.tsx    Eight dashboard views and trilingual copy
-src/dashboard.css    Responsive seller workspace styling
-src/original.css      Recovered site-specific homepage styling
-src/styles.css       Shared controls and responsive seller design
-public/              Existing hero image and favicon
-supabase/migrations/ PostgreSQL tables, RPCs, RLS and private storage policy
-supabase/functions/  Server-side TypeScript staff invitation handler
-supabase/tests/      Disposable database integration tests
-docs/                Backend deployment and administrator setup
+frontend/src/          React UI, project list, seller forms and admin
+frontend/tests/        UI and browser adapter tests
+backend/src/           Independent authenticated project API
+backend/migrations/    PostgreSQL schema and validation
+backend/tests/         HTTP/database integration tests
+supabase/              Existing managed database and Edge Functions
+compose.yaml           Frontend, API, migrations and PostgreSQL
+.openai/hosting.json    Existing Sites publication target
 ```
 
-## Recovery provenance
+Customer project data is private; internal approval does not publish it. Public listing submission has its own review process. Service selections record interest, not a paid order or signed brokerage mandate. Demo figures are fictional. Legal content, service agreements, production email and server backups require the owner's configured services.
 
-The linked GitHub repository initially contained only a README, and the predecessor hosted site's source could not be retrieved. Homepage text, site-specific CSS, hero image and favicon were recovered from public files on the owner-supplied legacy URL `https://maisonavendre.xieyujieee.chatgpt.site/`. React components, seller behavior and the dashboard were reconstructed as maintainable source. Original compiled framework bundles are not included. Original backend code and data have not been recovered.
+Changes use feature branches and pull requests; publishing a Sites version does not merge its GitHub PR. Legacy setup documents describe the managed backend and may use former `src/` paths; source now lives under `frontend/src/`.
 
-Icons are provided by `lucide-react` under its ISC licence. Dependency licences remain applicable. This reconstruction assigns no additional open-source licence to the owner's site content or images.
-
-Property publication / Publication des propriétés / 房源发布：The independent catalogue is available at `#proprietes`; sellers prepare and preview a listing at `#publier`. Reviewed publication source and activation steps are documented in [property publication](docs/property-publication.md). Public submission is disabled until backend and staff setup are complete.
+Icons: `lucide-react` (ISC). Other dependency licences remain applicable. No additional licence is assigned to the owner's content or images.
