@@ -23,14 +23,13 @@ import {apiUrl,apiResult,projectRequest} from './lib/project-api';
 import type { Language } from "./seller-copy";
 import "./admin.css";
 import { ListingReview } from "./listing-review";
-import { publicationCopy } from "./publication-copy";
 
 const copy = {
   fr: {
     title: "Espace administration",
     eyebrow: "PROPRIETEAVENDRE · ÉQUIPE",
     intro:
-      "Examinez les projets soumis et suivez les décisions de votre équipe.",
+      "Traitez les dossiers vendeurs et les annonces publiques depuis un seul endroit.",
     back: "Retour au site",
     login: "Se connecter",
     loginTitle: "Connectez-vous avec votre compte d’équipe",
@@ -43,9 +42,13 @@ const copy = {
     setupText:
       "L’administration réelle sera disponible après la configuration du projet Supabase. Aucun dossier client n’est affiché en mode démonstration.",
     loading: "Chargement…",
+    work: "Travail",
+    management: "Gestion",
     roleOwner: "Propriétaire",
     roleOperator: "Opérations",
-    queue: "Projets à examiner",
+    queue: "Centre d’examen",
+    projectReviews: "Dossiers vendeurs",
+    listingReviews: "Annonces publiques",
     audit: "Journal des opérations",
     invite: "Inviter un membre",
     refresh: "Actualiser",
@@ -147,7 +150,7 @@ const copy = {
   en: {
     title: "Administration",
     eyebrow: "PROPRIETEAVENDRE · TEAM",
-    intro: "Review submitted projects and follow your team’s decisions.",
+    intro: "Review seller projects and public listings from one place.",
     back: "Back to website",
     login: "Sign in",
     loginTitle: "Sign in with your team account",
@@ -160,9 +163,13 @@ const copy = {
     setupText:
       "Administration becomes available after the Supabase project is configured. No customer files are shown in demonstration mode.",
     loading: "Loading…",
+    work: "Work",
+    management: "Management",
     roleOwner: "Owner",
     roleOperator: "Operations",
-    queue: "Projects to review",
+    queue: "Review center",
+    projectReviews: "Seller projects",
+    listingReviews: "Public listings",
     audit: "Activity log",
     invite: "Invite a member",
     refresh: "Refresh",
@@ -263,7 +270,7 @@ const copy = {
   zh: {
     title: "管理工作台",
     eyebrow: "PROPRIETEAVENDRE · 团队",
-    intro: "审核卖家提交的项目，跟进团队的处理记录。",
+    intro: "在同一个入口审核卖家项目和待发布房源。",
     back: "返回网站",
     login: "登录",
     loginTitle: "使用团队账号登录",
@@ -275,9 +282,13 @@ const copy = {
     setupText:
       "连接 Supabase 项目后才可使用真实管理后台。演示模式不会展示任何客户档案。",
     loading: "加载中…",
+    work: "工作",
+    management: "管理",
     roleOwner: "平台所有者",
     roleOperator: "运营管理员",
-    queue: "待审核项目",
+    queue: "审核中心",
+    projectReviews: "卖家项目",
+    listingReviews: "公开房源",
     audit: "操作记录",
     invite: "邀请成员",
     refresh: "刷新",
@@ -391,12 +402,14 @@ type ProjectFile = {
   name: string;
   storage_path: string;
 };
-type Tab = "queue" | "audit" | "invite" | "listings" | "buyers";
+type Tab = "queue" | "audit" | "invite" | "buyers";
+type ReviewTab = "projects" | "listings";
 
 export function AdminPage({ lang }: { lang: Language }) {
   const t = copy[lang];
   const auth = useAuth();
   const [tab, setTab] = useState<Tab>("queue");
+  const [reviewTab, setReviewTab] = useState<ReviewTab>("projects");
   const [enquiryRefresh, setEnquiryRefresh] = useState(0);
   const [projects, setProjects] = useState<ReviewProject[]>([]);
   const [events, setEvents] = useState<AuditEvent[]>([]);
@@ -648,32 +661,39 @@ export function AdminPage({ lang }: { lang: Language }) {
           <span>{auth.user.email}</span>
         </div>
         <nav aria-label={t.title}>
-          <button className={tab === "buyers" ? "active" : ""} onClick={() => setTab("buyers")}>{buyerInboxCopy[lang].title}</button>
-          <button className={tab === "listings" ? "active" : ""} onClick={() => setTab("listings")}>{publicationCopy[lang].review}</button>
-          <button
-            className={tab === "queue" ? "active" : ""}
-            onClick={() => setTab("queue")}
-          >
-            <ClipboardCheck size={18} />
-            {t.queue}
-            <span>{projects.length}</span>
-          </button>
-          <button
-            className={tab === "audit" ? "active" : ""}
-            onClick={() => setTab("audit")}
-          >
-            <History size={18} />
-            {t.audit}
-          </button>
-          {auth.staffRole === "owner" && (
+          <div className="admin-nav-section">
+            <span className="admin-nav-heading">{t.work}</span>
             <button
-              className={tab === "invite" ? "active" : ""}
-              onClick={() => setTab("invite")}
+              className={tab === "queue" ? "active" : ""}
+              onClick={() => setTab("queue")}
             >
-              <UserPlus size={18} />
-              {t.invite}
+              <ClipboardCheck size={18} />
+              {t.queue}
+              <span>{projects.length}</span>
             </button>
-          )}
+            <button className={tab === "buyers" ? "active" : ""} onClick={() => setTab("buyers")}>
+              {buyerInboxCopy[lang].title}
+            </button>
+          </div>
+          <div className="admin-nav-section">
+            <span className="admin-nav-heading">{t.management}</span>
+            <button
+              className={tab === "audit" ? "active" : ""}
+              onClick={() => setTab("audit")}
+            >
+              <History size={18} />
+              {t.audit}
+            </button>
+            {auth.staffRole === "owner" && (
+              <button
+                className={tab === "invite" ? "active" : ""}
+                onClick={() => setTab("invite")}
+              >
+                <UserPlus size={18} />
+                {t.invite}
+              </button>
+            )}
+          </div>
         </nav>
         <a className="admin-seller-link" href="#dashboard">
           {t.original}
@@ -708,13 +728,35 @@ export function AdminPage({ lang }: { lang: Language }) {
             {message.text}
           </p>
         )}
-        {tab === "listings" && <ListingReview key={auth.user.id} lang={lang} />}
         {tab === "buyers" && <BuyerEnquiries key={auth.user.id} lang={lang} refreshKey={enquiryRefresh} />}
         {tab === "queue" && (
           <>
+            <div className="admin-review-tabs" role="tablist" aria-label={t.queue}>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={reviewTab === "projects"}
+                className={reviewTab === "projects" ? "active" : ""}
+                onClick={() => setReviewTab("projects")}
+              >
+                {t.projectReviews}<span>{projects.length}</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={reviewTab === "listings"}
+                className={reviewTab === "listings" ? "active" : ""}
+                onClick={() => setReviewTab("listings")}
+              >
+                {t.listingReviews}
+              </button>
+            </div>
+            {reviewTab === "listings" ? (
+              <ListingReview key={auth.user.id} lang={lang} />
+            ) : <>
             <div className="admin-panel">
               <h2>
-                {t.queue} <span className="admin-count">{projects.length}</span>
+                {t.projectReviews} <span className="admin-count">{projects.length}</span>
               </h2>
               {loading ? (
                 <p aria-live="polite">{t.loading}</p>
@@ -856,6 +898,7 @@ export function AdminPage({ lang }: { lang: Language }) {
                 </div>
               </section>
             )}
+            </>}
           </>
         )}
         {tab === "audit" && (

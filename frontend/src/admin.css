@@ -54,7 +54,19 @@
 }
 .admin-sidebar nav {
   display: grid;
-  gap: 8px;
+  gap: 22px;
+}
+.admin-nav-section {
+  display: grid;
+  gap: 7px;
+}
+.admin-nav-heading {
+  padding: 0 10px 3px;
+  color: #8eafa1;
+  font-size: 0.67rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 .admin-sidebar nav button {
   background: transparent;
@@ -81,6 +93,41 @@
   padding: 2px 5px;
   border-radius: 5px;
   text-align: center;
+}
+.admin-review-tabs {
+  display: flex;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 5px;
+  margin: 0 0 18px;
+  border: 1px solid #dbe3d8;
+  border-radius: 10px;
+  background: #e9eee7;
+}
+.admin-review-tabs button {
+  border: 0;
+  border-radius: 7px;
+  padding: 10px 15px;
+  background: transparent;
+  color: #536a5e;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.admin-review-tabs button.active {
+  background: white;
+  color: #184d41;
+  box-shadow: 0 1px 3px #163d371c;
+}
+.admin-review-tabs button span {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: #edf3e8;
+  font-size: 0.75rem;
 }
 .admin-seller-link {
   font-size: 0.8rem;
@@ -446,6 +493,15 @@
     gap: 5px;
     overflow-x: auto;
   }
+  .admin-nav-section {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+  }
+  .admin-nav-heading {
+    display: none;
+  }
   .admin-sidebar nav button {
     white-space: nowrap;
     flex-shrink: 0;
@@ -456,6 +512,14 @@
   }
   .admin-content {
     padding: 25px 16px;
+  }
+  .admin-review-tabs {
+    width: 100%;
+  }
+  .admin-review-tabs button {
+    flex: 1;
+    padding: 9px 10px;
+    font-size: 0.78rem;
   }
   .admin-heading {
     gap: 15px;
