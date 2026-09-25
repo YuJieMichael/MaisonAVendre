@@ -1319,6 +1319,21 @@ export function Dashboard({ lang }: { lang: Language }) {
                   "选择仅代表服务意向，不会产生订单或付款。",
                 )}
               </p>
+              <button
+                className="service-next-step"
+                type="button"
+                disabled={busy}
+                onClick={async () => {
+                  if (await saveNow()) go("property");
+                }}
+              >
+                {t(
+                  "Continuer vers les renseignements",
+                  "Continue to property details",
+                  "下一步：完善房屋资料",
+                )}
+                <ArrowRight />
+              </button>
             </section>
           </>
         )}

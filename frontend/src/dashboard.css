@@ -662,6 +662,15 @@
 .selected-services li .soft-badge {
   margin-left: auto;
 }
+.selected-services .service-next-step {
+  margin-top: 14px;
+  border: 0;
+  cursor: pointer;
+}
+.selected-services .service-next-step:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
 .soft-badge {
   display: inline-block;
   background: #f2efdf;
