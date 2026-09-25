@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "./auth";
 import { AdminEmailPanel } from "./admin-email";
-import { BuyerEnquiries, buyerInboxCopy } from "./buyer-enquiries";
+import { BuyerEnquiries } from "./buyer-enquiries";
 import { supabase } from "./lib/supabase";
 import {apiUrl,apiResult,projectRequest} from './lib/project-api';
 import type { Language } from "./seller-copy";
@@ -45,14 +45,18 @@ const copy = {
     loading: "Chargement…",
     work: "Travail",
     management: "Gestion",
+    operations: "Équipe et activité",
     roleOwner: "Propriétaire",
     roleOperator: "Opérations",
     queue: "Centre d’examen",
+    buyerRequests: "Demandes d’achat",
     projectReviews: "Dossiers vendeurs",
     listingReviews: "Annonces publiques",
     brokerApplications: "Vérification des courtiers",
     audit: "Journal des opérations",
     invite: "Inviter un membre",
+    auditTab: "Activité",
+    inviteTab: "Équipe",
     refresh: "Actualiser",
     empty: "Aucun projet en attente d’examen.",
     emptyAudit: "Aucune opération à afficher.",
@@ -167,14 +171,18 @@ const copy = {
     loading: "Loading…",
     work: "Work",
     management: "Management",
+    operations: "Team and activity",
     roleOwner: "Owner",
     roleOperator: "Operations",
     queue: "Review center",
+    buyerRequests: "Buyer enquiries",
     projectReviews: "Seller projects",
     listingReviews: "Public listings",
     brokerApplications: "Broker verification",
     audit: "Activity log",
     invite: "Invite a member",
+    auditTab: "Activity",
+    inviteTab: "Team",
     refresh: "Refresh",
     empty: "No projects are awaiting review.",
     emptyAudit: "No activity to show.",
@@ -287,14 +295,18 @@ const copy = {
     loading: "加载中…",
     work: "工作",
     management: "管理",
+    operations: "团队与记录",
     roleOwner: "平台所有者",
     roleOperator: "运营管理员",
     queue: "审核中心",
+    buyerRequests: "买家咨询",
     projectReviews: "卖家项目",
     listingReviews: "公开房源",
     brokerApplications: "经纪认证",
     audit: "操作记录",
     invite: "邀请成员",
+    auditTab: "操作记录",
+    inviteTab: "团队成员",
     refresh: "刷新",
     empty: "目前没有待审核的项目。",
     emptyAudit: "暂无操作记录。",
@@ -406,14 +418,16 @@ type ProjectFile = {
   name: string;
   storage_path: string;
 };
-type Tab = "queue" | "audit" | "invite" | "buyers" | "brokers";
-type ReviewTab = "projects" | "listings";
+type Tab = "queue" | "operations";
+type ReviewTab = "projects" | "listings" | "brokers" | "buyers";
+type OperationsTab = "audit" | "invite";
 
 export function AdminPage({ lang }: { lang: Language }) {
   const t = copy[lang];
   const auth = useAuth();
   const [tab, setTab] = useState<Tab>("queue");
   const [reviewTab, setReviewTab] = useState<ReviewTab>("projects");
+  const [operationsTab, setOperationsTab] = useState<OperationsTab>("audit");
   const [enquiryRefresh, setEnquiryRefresh] = useState(0);
   const [projects, setProjects] = useState<ReviewProject[]>([]);
   const [events, setEvents] = useState<AuditEvent[]>([]);
@@ -431,6 +445,12 @@ export function AdminPage({ lang }: { lang: Language }) {
   const fetchVersion = useRef(0);
   const fileVersion = useRef(0);
   const canRead = !!auth.user && !!auth.staffRole && auth.adminVerified;
+
+  useEffect(() => {
+    if (auth.staffRole !== "owner" && operationsTab === "invite") {
+      setOperationsTab("audit");
+    }
+  }, [auth.staffRole, operationsTab]);
 
   const refresh = useCallback(async () => {
     if (!supabase || !canRead) return;
@@ -669,37 +689,23 @@ export function AdminPage({ lang }: { lang: Language }) {
             <span className="admin-nav-heading">{t.work}</span>
             <button
               className={tab === "queue" ? "active" : ""}
+              aria-current={tab === "queue" ? "page" : undefined}
               onClick={() => setTab("queue")}
             >
               <ClipboardCheck size={18} />
               {t.queue}
-              <span>{projects.length}</span>
-            </button>
-            <button className={tab === "buyers" ? "active" : ""} onClick={() => setTab("buyers")}>
-              {buyerInboxCopy[lang].title}
-            </button>
-            <button className={tab === "brokers" ? "active" : ""} onClick={() => setTab("brokers")}>
-              <ShieldCheck size={18} />{t.brokerApplications}
             </button>
           </div>
           <div className="admin-nav-section">
             <span className="admin-nav-heading">{t.management}</span>
             <button
-              className={tab === "audit" ? "active" : ""}
-              onClick={() => setTab("audit")}
+              className={tab === "operations" ? "active" : ""}
+              aria-current={tab === "operations" ? "page" : undefined}
+              onClick={() => setTab("operations")}
             >
               <History size={18} />
-              {t.audit}
+              {t.operations}
             </button>
-            {auth.staffRole === "owner" && (
-              <button
-                className={tab === "invite" ? "active" : ""}
-                onClick={() => setTab("invite")}
-              >
-                <UserPlus size={18} />
-                {t.invite}
-              </button>
-            )}
           </div>
         </nav>
         <a className="admin-seller-link" href="#dashboard">
@@ -735,8 +741,6 @@ export function AdminPage({ lang }: { lang: Language }) {
             {message.text}
           </p>
         )}
-        {tab === "buyers" && <BuyerEnquiries key={auth.user.id} lang={lang} refreshKey={enquiryRefresh} />}
-        {tab === "brokers" && <BrokerReview key={auth.user.id} lang={lang} />}
         {tab === "queue" && (
           <>
             <div className="admin-review-tabs" role="tablist" aria-label={t.queue}>
@@ -758,9 +762,31 @@ export function AdminPage({ lang }: { lang: Language }) {
               >
                 {t.listingReviews}
               </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={reviewTab === "brokers"}
+                className={reviewTab === "brokers" ? "active" : ""}
+                onClick={() => setReviewTab("brokers")}
+              >
+                {t.brokerApplications}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={reviewTab === "buyers"}
+                className={reviewTab === "buyers" ? "active" : ""}
+                onClick={() => setReviewTab("buyers")}
+              >
+                {t.buyerRequests}
+              </button>
             </div>
             {reviewTab === "listings" ? (
               <ListingReview key={auth.user.id} lang={lang} />
+            ) : reviewTab === "brokers" ? (
+              <BrokerReview key={auth.user.id} lang={lang} />
+            ) : reviewTab === "buyers" ? (
+              <BuyerEnquiries key={auth.user.id} lang={lang} refreshKey={enquiryRefresh} />
             ) : <>
             <div className="admin-panel">
               <h2>
@@ -909,7 +935,17 @@ export function AdminPage({ lang }: { lang: Language }) {
             </>}
           </>
         )}
-        {tab === "audit" && (
+        {tab === "operations" && (
+          <>
+          <div className="admin-review-tabs admin-operation-tabs" role="tablist" aria-label={t.management}>
+            <button type="button" role="tab" aria-selected={operationsTab === "audit"} className={operationsTab === "audit" ? "active" : ""} onClick={() => setOperationsTab("audit")}>
+              <History size={16} />{t.auditTab}
+            </button>
+            {auth.staffRole === "owner" && <button type="button" role="tab" aria-selected={operationsTab === "invite"} className={operationsTab === "invite" ? "active" : ""} onClick={() => setOperationsTab("invite")}>
+              <UserPlus size={16} />{t.inviteTab}
+            </button>}
+          </div>
+          {operationsTab === "audit" && (
           <section className="admin-panel">
             <h2>{t.audit}</h2>
             <p className="admin-help">{t.viewOnly}</p>
@@ -954,8 +990,10 @@ export function AdminPage({ lang }: { lang: Language }) {
               </div>
             )}
           </section>
+          )}
+          </>
         )}
-        {tab === "invite" && auth.staffRole === "owner" && (
+        {tab === "operations" && operationsTab === "invite" && auth.staffRole === "owner" && (
           <section className="admin-panel admin-invite">
             <UserPlus size={28} />
             <h2>{t.inviteTitle}</h2>
