@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -23,14 +23,13 @@ import {
   MessageSquare,
   Plus,
   Search,
-  Settings2,
   ShieldCheck,
   Sparkles,
   Users,
   Video,
   X,
 } from "lucide-react";
-import { useProject, type Plan } from "./project";
+import { useProject } from "./project";
 import { sellerCopy, type Language } from "./seller-copy";
 import { ProjectStatus } from "./project-status";
 
@@ -41,8 +40,7 @@ type Section =
   | "visits"
   | "offers"
   | "documents"
-  | "services"
-  | "mode";
+  | "services";
 const sections = [
   "overview",
   "property",
@@ -51,7 +49,6 @@ const sections = [
   "offers",
   "documents",
   "services",
-  "mode",
 ] as const;
 const icons = [
   LayoutDashboard,
@@ -61,7 +58,6 @@ const icons = [
   ClipboardList,
   FolderOpen,
   Sparkles,
-  Settings2,
 ];
 const navCopy = {
   fr: [
@@ -72,7 +68,6 @@ const navCopy = {
     "Offres",
     "Documents",
     "Mes services",
-    "Mon accompagnement",
   ],
   en: [
     "Overview",
@@ -82,7 +77,6 @@ const navCopy = {
     "Offers",
     "Documents",
     "My services",
-    "My support",
   ],
   zh: [
     "项目总览",
@@ -92,7 +86,6 @@ const navCopy = {
     "报价管理",
     "文件中心",
     "可选服务",
-    "服务模式",
   ],
 };
 const serviceText = {
@@ -149,7 +142,6 @@ export function Dashboard({ lang }: { lang: Language }) {
   const t = (fr: string, en: string, zh: string) => ({ fr, en, zh })[lang];
   const {
     plan,
-    setPlan,
     form,
     photos,
     services,
@@ -179,8 +171,6 @@ export function Dashboard({ lang }: { lang: Language }) {
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [message, setMessage] = useState("");
-  const [pendingPlan, setPendingPlan] = useState<Plan | null>(null);
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const [offerOpen, setOfferOpen] = useState(false);
   const [showVisitForm, setShowVisitForm] = useState(false);
   const [visitDate, setVisitDate] = useState("");
@@ -197,9 +187,6 @@ export function Dashboard({ lang }: { lang: Language }) {
     addEventListener("hashchange", change);
     return () => removeEventListener("hashchange", change);
   }, []);
-  useEffect(() => {
-    if (pendingPlan) dialogRef.current?.showModal();
-  }, [pendingPlan]);
   const go = (next: Section) => {
     const base = isDemo ? "demo" : "dashboard";
     location.hash = next === "overview" ? base : `${base}/${next}`;
@@ -635,40 +622,7 @@ export function Dashboard({ lang }: { lang: Language }) {
                 </section>
               </div>
               <div>
-                <section className="dashboard-card mode-overview">
-                  <span className="tiny-label">
-                    {t("MON ACCOMPAGNEMENT", "MY SUPPORT", "当前服务模式")}
-                  </span>
-                  <Handshake />
-                  <h2>
-                    {plan === "with"
-                      ? t(
-                          "Un courtier à mes côtés",
-                          "Broker-supported",
-                          "希望经纪协助",
-                        )
-                      : t(
-                          "J’avance à mon rythme",
-                          "I set my own pace",
-                          "按自己的节奏卖房",
-                        )}
-                  </h2>
-                  <p>
-                    {t(
-                      "Ajoutez de l’aide sans recommencer votre dossier.",
-                      "Add support without starting your project over.",
-                      "随时增加帮助，已有资料继续保留。",
-                    )}
-                  </p>
-                  <button onClick={() => go("mode")}>
-                    {t(
-                      "Adapter mon accompagnement",
-                      "Adjust my support",
-                      "调整服务模式",
-                    )}
-                    <ArrowRight />
-                  </button>
-                </section>
+
                 <section className="dashboard-card">
                   <div className="card-title">
                     <h2>{t("À venir", "Coming up", "近期安排")}</h2>
@@ -1363,154 +1317,7 @@ export function Dashboard({ lang }: { lang: Language }) {
           </>
         )}
 
-        {section === "mode" && (
-          <>
-            <div className="continuity-banner">
-              <ShieldCheck />
-              <div>
-                <h2>
-                  {t(
-                    "Votre dossier vous suit.",
-                    "Your project stays with you.",
-                    "换一种服务，继续同一个项目。",
-                  )}
-                </h2>
-                <p>
-                  {t(
-                    "Vos informations, photos et services sélectionnés restent en place quand vous changez de préférence.",
-                    "Your information, photos and selected services remain when you change your preference.",
-                    "调整服务意向时，已填资料、照片和选定服务都会保留。",
-                  )}
-                </p>
-              </div>
-            </div>
-            <div className="mode-options">
-              {(["without", "with"] as Plan[]).map((value) => (
-                <article
-                  className={`dashboard-card ${plan === value ? "selected-mode" : ""}`}
-                  key={value}
-                >
-                  <span className="catalog-icon">
-                    {value === "with" ? <Handshake /> : <House />}
-                  </span>
-                  <span className="soft-badge">
-                    {plan === value
-                      ? t(
-                          "Préférence actuelle",
-                          "Current preference",
-                          "当前意向",
-                        )
-                      : t(
-                          "Disponible à tout moment",
-                          "Available anytime",
-                          "随时可以选择",
-                        )}
-                  </span>
-                  <h2>
-                    {value === "with"
-                      ? t("Avec un courtier", "With a broker", "经纪协助")
-                      : t(
-                          "Autonome + aide à la carte",
-                          "Self-directed + optional help",
-                          "自主出售＋按需帮助",
-                        )}
-                  </h2>
-                  <p>
-                    {value === "with"
-                      ? t(
-                          "Préparez une prise de contact pour définir un accompagnement et un mandat.",
-                          "Prepare to discuss support and an agreement with a broker.",
-                          "准备与经纪沟通，另行确认服务范围和委托协议。",
-                        )
-                      : t(
-                          "Vous gérez votre vente et choisissez les services dont vous avez besoin.",
-                          "Manage your sale and choose the services you need.",
-                          "由您管理卖房过程，按实际需要购买专业服务。",
-                        )}
-                  </p>
-                  <button
-                    disabled={plan === value}
-                    onClick={() => setPendingPlan(value)}
-                  >
-                    {plan === value ? <Check /> : <ArrowRight />}
-                    {plan === value
-                      ? t("Mode sélectionné", "Selected", "已选择")
-                      : t(
-                          "Choisir cette préférence",
-                          "Choose this preference",
-                          "选择此服务意向",
-                        )}
-                  </button>
-                </article>
-              ))}
-            </div>
-            <p className="service-boundary">
-              <Info />
-              {t(
-                "Changer de préférence ne signe aucun mandat et ne contacte aucun courtier.",
-                "Changing a preference does not sign an agreement or contact a broker.",
-                "切换意向不会签订任何委托协议，也不会自动联系经纪。",
-              )}
-            </p>
-          </>
-        )}
-        <dialog
-          ref={dialogRef}
-          className="mode-dialog"
-          aria-labelledby="mode-dialog-title"
-          onCancel={() => setPendingPlan(null)}
-          onClose={() => setPendingPlan(null)}
-        >
-          <button
-            className="dialog-close icon-button"
-            aria-label={t("Fermer", "Close", "关闭")}
-            onClick={() => dialogRef.current?.close()}
-          >
-            <X />
-          </button>
-          <Handshake />
-          <h2 id="mode-dialog-title">
-            {t(
-              "Adapter votre accompagnement ?",
-              "Adjust your support?",
-              "调整服务意向？",
-            )}
-          </h2>
-          <p>
-            {t(
-              "Votre dossier et votre sélection de services seront conservés. Ce choix indique votre préférence d’accompagnement.",
-              "Your project and selected services will be kept. This choice records your support preference.",
-              "房屋资料和已选服务都会保留。本次操作记录您的服务意向。",
-            )}
-          </p>
-          <div>
-            <button
-              className="outline"
-              onClick={() => dialogRef.current?.close()}
-            >
-              {t("Annuler", "Cancel", "取消")}
-            </button>
-            <button
-              onClick={() => {
-                if (pendingPlan) setPlan(pendingPlan);
-                dialogRef.current?.close();
-                setMessage(
-                  t(
-                    "Préférence mise à jour. Votre dossier est conservé.",
-                    "Preference updated. Your project has been kept.",
-                    "服务意向已调整，原有项目资料已保留。",
-                  ),
-                );
-              }}
-            >
-              {t(
-                "Confirmer ma préférence",
-                "Confirm preference",
-                "确认服务意向",
-              )}
-            </button>
-          </div>
-        </dialog>
+
       </div>
     </div>
   );
