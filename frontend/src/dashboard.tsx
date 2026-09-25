@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   ClipboardList,
   Download,
   Eye,
@@ -87,6 +88,11 @@ const navCopy = {
     "文件中心",
     "可选服务",
   ],
+};
+const navGroups = {
+  fr: { property: "Propriété", activity: "Acheteurs et visites", files: "Documents" },
+  en: { property: "Property", activity: "Buyers and visits", files: "Documents" },
+  zh: { property: "房源管理", activity: "买家与交易", files: "资料" },
 };
 const serviceText = {
   fr: [
@@ -200,6 +206,7 @@ export function Dashboard({ lang }: { lang: Language }) {
     changes_requested: t("À modifier", "Changes requested", "待修改"),
   }[project?.status ?? "draft"];
   const names = navCopy[lang];
+  const groups = navGroups[lang];
   const address = sample
     ? t("Votre maison au Québec", "Your home in Québec", "您的魁北克房屋")
     : form.address ||
@@ -304,23 +311,24 @@ export function Dashboard({ lang }: { lang: Language }) {
           </div>
         </div>
         <nav aria-label={t("Espace vendeur", "Seller workspace", "卖家工作台")}>
-          {sections.map((key, i) => {
-            const Icon = icons[i];
-            return (
-              <a
-                key={key}
-                href={`#${isDemo ? "demo" : `projects/${project?.id}`}${key === "overview" ? "" : `/${key}`}`}
-                className={section === key ? "active" : ""}
-                aria-current={section === key ? "page" : undefined}
-              >
-                <Icon />
-                {names[i]}
-                {key === "services" && services.length > 0 && (
-                  <span className="nav-count">{services.length}</span>
-                )}
-              </a>
-            );
-          })}
+          <a href={`#${isDemo ? "demo" : `projects/${project?.id}`}`} className={section === "overview" ? "active" : ""} aria-current={section === "overview" ? "page" : undefined}><LayoutDashboard />{names[0]}</a>
+          <details className="workspace-nav-group" open={section === "property" || section === "services"}>
+            <summary><House />{groups.property}<ChevronDown className="workspace-nav-chevron" /></summary>
+            <div>{(["property", "services"] as const).map((key) => {
+              const i = sections.indexOf(key);
+              const Icon = icons[i];
+              return <a key={key} href={`#${isDemo ? "demo" : `projects/${project?.id}`}/${key}`} className={section === key ? "active" : ""} aria-current={section === key ? "page" : undefined}><Icon />{names[i]}{key === "services" && services.length > 0 && <span className="nav-count">{services.length}</span>}</a>;
+            })}</div>
+          </details>
+          <details className="workspace-nav-group" open={section === "buyers" || section === "visits" || section === "offers"}>
+            <summary><Users />{groups.activity}<ChevronDown className="workspace-nav-chevron" /></summary>
+            <div>{(["buyers", "visits", "offers"] as const).map((key) => {
+              const i = sections.indexOf(key);
+              const Icon = icons[i];
+              return <a key={key} href={`#${isDemo ? "demo" : `projects/${project?.id}`}/${key}`} className={section === key ? "active" : ""} aria-current={section === key ? "page" : undefined}><Icon />{names[i]}</a>;
+            })}</div>
+          </details>
+          <a href={`#${isDemo ? "demo" : `projects/${project?.id}`}/documents`} className={section === "documents" ? "active" : ""} aria-current={section === "documents" ? "page" : undefined}><FolderOpen />{names[5]}</a>
         </nav>
         {!isDemo&&<a className="workspace-back" href="#projects" onClick={async e=>{e.preventDefault();if(await saveNow())location.hash='projects';}}><ChevronLeft/>{t('Tous les projets','All projects','全部项目')}</a>}
         <div className="sidebar-help">
@@ -384,7 +392,7 @@ export function Dashboard({ lang }: { lang: Language }) {
               : t("Créer mon dossier", "Create my project", "建立我的项目")}
           </a>
         </div>
-        <div className="workspace-demo">
+        {section === "overview" && <div className="workspace-demo">
           <Info />
           <span>{localNote}</span>
           <a className="text-button" href={isDemo ? "#dashboard" : "#demo"} target={isDemo ? undefined : "_blank"} rel="noopener">
@@ -392,8 +400,8 @@ export function Dashboard({ lang }: { lang: Language }) {
               ? t("Ouvrir mon espace", "Open my workspace", "进入我的工作台")
               : t("Voir un exemple", "See an example", "查看示例项目")}
           </a>
-        </div>
-        <ProjectStatus lang={lang} review />
+        </div>}
+        {section === "overview" && <ProjectStatus lang={lang} review />}
         {sample && (
           <p className="sample-label">
             {t(

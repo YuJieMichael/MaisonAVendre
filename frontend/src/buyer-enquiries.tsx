@@ -33,13 +33,24 @@ export function BuyerEnquiries({lang,refreshKey=0}:{lang:Language;refreshKey?:nu
     if(key==='contactMethod')return v==='email'?t.email:v==='phone'?t.phone:v;
     return v;
   };
-  return <section className="admin-panel">
-    <h2>{t.title}</h2><p>{t.hint}</p>
-    <button className="admin-secondary" disabled={loading} onClick={()=>void load()}>{t.refresh}</button>
-    {loading?<p role="status">{t.loading}</p>:error?<p role="alert">{t.error}</p>:rows.length===0?<p>{t.empty}</p>:<div className="admin-table-wrap"><table><thead><tr>{[t.date,t.name,t.email,t.city,t.details].map(label=><th key={label}>{label}</th>)}</tr></thead><tbody>{rows.map(row=><tr key={row.id}>
-      <td>{date(row.created_at)}</td><td>{row.payload.name}</td><td>{row.payload.email}</td><td>{value(row.payload,'city')}</td>
-      <td><details><summary>{t.details}</summary><dl>{(['phone','budgetMin','budgetMax','propertyType','requirements','timeline','contactLanguage','contactMethod','contactTime'] as const).map(key=><div key={key}><dt>{key==='budgetMin'?t.min:key==='budgetMax'?t.max:t[key]}</dt><dd style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{value(row.payload,key)}</dd></div>)}</dl></details></td>
-    </tr>)}</tbody></table></div>}
+  return <section className="admin-panel buyer-enquiries">
+    <div className="buyer-enquiries-heading">
+      <div><h2>{t.title}</h2><p>{t.hint}</p></div>
+      <button className="admin-secondary" disabled={loading} onClick={()=>void load()}>{t.refresh}</button>
+    </div>
+    {loading?<p role="status">{t.loading}</p>:error?<p role="alert">{t.error}</p>:rows.length===0?<p>{t.empty}</p>:<div className="buyer-enquiry-list">{rows.map(row=>(
+      <article className="buyer-enquiry-card" key={row.id}>
+        <div className="buyer-enquiry-topline">
+          <div className="buyer-enquiry-person"><strong>{row.payload.name||'—'}</strong>{row.payload.email?<a href={`mailto:${row.payload.email}`}>{row.payload.email}</a>:<span>—</span>}<span>{value(row.payload,'phone')}</span></div>
+          <div className="buyer-enquiry-location"><span>{t.city}</span><strong>{value(row.payload,'city')}</strong></div>
+          <div className="buyer-enquiry-date"><span>{t.date}</span><strong>{date(row.created_at)}</strong></div>
+          <details className="buyer-enquiry-details">
+            <summary>{t.details}</summary>
+            <dl className="buyer-enquiry-fields">{(['budgetMin','budgetMax','propertyType','requirements','timeline','contactLanguage','contactMethod','contactTime'] as const).map(key=><div key={key}><dt>{key==='budgetMin'?t.min:key==='budgetMax'?t.max:t[key]}</dt><dd>{value(row.payload,key)}</dd></div>)}</dl>
+          </details>
+        </div>
+      </article>
+    ))}</div>}
     <div style={{display:'flex',gap:'1rem',marginTop:'1rem'}}><button className="admin-secondary" disabled={loading||offset===0} onClick={()=>setOffset(n=>Math.max(0,n-50))}>{t.previous}</button><button className="admin-secondary" disabled={loading||!more||error} onClick={()=>setOffset(n=>n+50)}>{t.next}</button></div>
   </section>;
 }

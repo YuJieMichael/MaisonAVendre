@@ -12,6 +12,9 @@ it('displays a single buyer immediately and clears private rows when refresh fai
   try {
     await act(async()=>root.render(<BuyerEnquiries lang="en"/>));
     expect(el.textContent).toContain('Test Buyer');expect(el.textContent).toContain('Three bedrooms');
+    expect(el.querySelector('.buyer-enquiry-card')).not.toBeNull();
+    expect(el.querySelector('table')).toBeNull();
+    expect(el.querySelector('.buyer-enquiry-details .buyer-enquiry-fields')).not.toBeNull();
     expect(mock.rpc).toHaveBeenCalledWith('list_buyer_enquiries',{p_offset:0});
     mock.rpc.mockResolvedValue({data:null,error:{message:'denied'}});
     await act(async()=>el.querySelector<HTMLButtonElement>('button')!.click());

@@ -83,6 +83,48 @@
   color: #123f3e;
   font-weight: 750;
 }
+.workspace-nav-group {
+  border-radius: 9px;
+  background: #ffffff08;
+}
+.workspace-nav-group summary {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 10px;
+  border-radius: 8px;
+  color: #c7d7cd;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+.workspace-nav-group summary::-webkit-details-marker {
+  display: none;
+}
+.workspace-nav-group summary > svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.workspace-nav-group summary .workspace-nav-chevron {
+  width: 15px;
+  height: 15px;
+  margin-left: auto;
+  transition: transform 0.15s ease;
+}
+.workspace-nav-group[open] summary .workspace-nav-chevron {
+  transform: rotate(180deg);
+}
+.workspace-nav-group > div {
+  display: grid;
+  gap: 3px;
+  padding: 0 5px 6px 12px;
+}
+.workspace-nav-group > div a {
+  font-size: 0.81rem;
+  padding: 9px 8px;
+}
 .nav-count {
   margin-left: auto;
   font-size: 0.75rem;
@@ -1082,6 +1124,37 @@
     white-space: nowrap;
     padding: 10px;
     font-size: 0.8rem;
+  }
+  .workspace-nav-group {
+    position: relative;
+    flex-shrink: 0;
+    background: transparent;
+  }
+  .workspace-nav-group summary {
+    white-space: nowrap;
+    padding: 10px;
+    font-size: 0.8rem;
+  }
+  .workspace-nav-group summary > svg {
+    width: 16px;
+  }
+  .workspace-nav-group summary .workspace-nav-chevron {
+    width: 13px;
+  }
+  .workspace-nav-group > div {
+    position: absolute;
+    z-index: 5;
+    top: calc(100% + 5px);
+    left: 0;
+    min-width: 180px;
+    padding: 6px;
+    border: 1px solid #dce5da;
+    border-radius: 10px;
+    background: white;
+    box-shadow: 0 8px 24px #19392b20;
+  }
+  .workspace-nav-group > div a {
+    color: #325a46;
   }
   .dashboard-sidebar nav a > svg {
     width: 16px;
