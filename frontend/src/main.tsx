@@ -27,6 +27,7 @@ import "./styles.css";
 import "./dashboard.css";
 import "./publication.css";
 import "./workspace.css";
+import "./brokers.css";
 import { publicationCopy } from "./publication-copy";
 
 const PublishProperty = lazy(() => import("./publish-property").then(module => ({ default: module.PublishProperty })));
@@ -37,6 +38,7 @@ const AdminPage = lazy(() => import("./admin").then(module => ({ default: module
 const EnquiryForm = lazy(() => import("./enquiry").then(module => ({ default: module.EnquiryForm })));
 const ListingsPage = lazy(() => import("./listings").then(module => ({ default: module.ListingsPage })));
 const FeaturedProperties = lazy(() => import("./listings").then(module => ({ default: module.FeaturedProperties })));
+const BrokersPage = lazy(() => import("./brokers").then(module => ({ default: module.BrokersPage })));
 
 const labels = { en: "EN", fr: "FR", zh: "中文" };
 const notices = {
@@ -85,6 +87,7 @@ function App() {
   const publishing = hash.startsWith("#publier");
   const catalogue = hash.startsWith("#proprietes") || hash.startsWith("#propriete/");
   const selling = hash.startsWith("#vendre");
+  const brokers = hash.startsWith("#courtiers") || hash.startsWith("#broker");
   const [buyerSubmitted, setBuyerSubmitted] = useState(false);
   const dashboard = hash.startsWith("#dashboard");
   const projects = hash.startsWith('#projects') || dashboard;
@@ -122,6 +125,7 @@ function App() {
     <>
       {signingOut && <p className="account-session" role="status">{{ fr: "Enregistrement et déconnexion…", en: "Saving and signing out…", zh: "正在保存并退出…" }[lang]}</p>}
       <div inert={signingOut}>
+      <ProjectProvider key={auth.user?.id ?? "guest"} projectId={projectId}>
       <header className={`site-header ${projects || admin || demo ? 'workspace-header' : ''}`}>
         <Brand />
         <nav
@@ -146,6 +150,7 @@ function App() {
               {n}
             </a>
             {i === 1 && <a href="#proprietes" onClick={() => setMenu(false)} aria-current={catalogue ? "page" : undefined}>{publicationCopy[lang].listings}</a>}
+            {i === 1 && <a href="#courtiers" onClick={() => setMenu(false)} aria-current={brokers ? "page" : undefined}>{({ fr: "Courtiers vérifiés", en: "Verified brokers", zh: "已认证经纪" })[lang]}</a>}
             </React.Fragment>
           ))}
           <a
@@ -178,12 +183,7 @@ function App() {
               </button>
             ))}
           </div>
-          <a className="header-login" href={auth.user ? "#dashboard" : "#login"} onClick={() => setMenu(false)}>
-            <KeyRound size={17} aria-hidden="true" />
-            {auth.user
-              ? { fr: "Mon espace", en: "My account", zh: "我的账号" }[lang]
-              : { fr: "Connexion", en: "Sign in", zh: "登录" }[lang]}
-          </a>
+          {auth.user ? <HeaderAccount lang={lang} onLeavingChange={setSigningOut} /> : <a className="header-login" href="#login" onClick={() => setMenu(false)}><KeyRound size={17} aria-hidden="true" />{{ fr: "Connexion", en: "Sign in", zh: "登录" }[lang]}</a>}
           <button
             className="menu-button"
             type="button"
@@ -196,24 +196,30 @@ function App() {
           </button>
         </div>
       </header>
-      <ProjectProvider key={auth.user?.id ?? "guest"} projectId={projectId}>
-        {(auth.user || dashboard || admin || authRoute) && <AccountSession lang={lang} onLeavingChange={setSigningOut} />}
+        {(auth.user || dashboard || admin || authRoute) && <AccountSession lang={lang} />}
         <main>
           <Suspense fallback={<LoadingWorkspace lang={lang} />}>
-          {authRoute ? <AuthPage lang={lang} /> : admin ? <AdminPage lang={lang} /> : demo ? <ProjectProvider mode="demo"><Dashboard lang={lang} /></ProjectProvider> : publishing ? <PublishProperty lang={lang} /> : catalogue ? <ListingsPage lang={lang} hash={hash} /> : selling ? <EnquiryForm key="seller" kind="seller" lang={lang} /> : projects ? (
+          {authRoute ? <AuthPage lang={lang} /> : admin ? <AdminPage lang={lang} /> : brokers ? <BrokersPage lang={lang} /> : demo ? <ProjectProvider mode="demo"><Dashboard lang={lang} /></ProjectProvider> : publishing ? <PublishProperty lang={lang} /> : catalogue ? <ListingsPage lang={lang} hash={hash} /> : selling ? <EnquiryForm key="seller" kind="seller" lang={lang} /> : projects ? (
             auth.loading ? <LoadingWorkspace lang={lang} /> : !auth.user ? <AuthPage lang={lang} /> : !projectId ? <Projects lang={lang}/> : <PrivateWorkspace lang={lang}>{editingProject?<SellerFlow key={projectId} lang={lang}/>:<Dashboard key={projectId} lang={lang} />}</PrivateWorkspace>
           ) : browsing ? buyerSubmitted ? <ListingsPage lang={lang} hash={hash} /> : <EnquiryForm key="buyer" kind="buyer" lang={lang} onContinue={() => setBuyerSubmitted(true)} /> : <Home lang={lang} />}
           </Suspense>
         </main>
-      </ProjectProvider>
       <footer hidden={projects || admin || demo}>
         <Brand footer />
         <p>{d.footer}</p>
         <p>{d.legal}</p>
       </footer>
+      </ProjectProvider>
       </div>
     </>
   );
+}
+
+function HeaderAccount({lang,onLeavingChange}:{lang:Language;onLeavingChange:(value:boolean)=>void}) {
+  const auth=useAuth(); const p=useProject(); const [leaving,setLeaving]=useState(false); const [error,setError]=useState("");
+  const copy={fr:{account:"Mon espace",logout:"Déconnexion",busy:"Enregistrement…",failed:"Enregistrement impossible. Ouvrez votre espace et réessayez."},en:{account:"My account",logout:"Sign out",busy:"Saving…",failed:"Could not save. Open your workspace and retry."},zh:{account:"我的账号",logout:"退出登录",busy:"正在保存…",failed:"保存失败，请进入工作台重试。"}}[lang];
+  async function leave(){if(leaving||p.busy)return;setLeaving(true);onLeavingChange(true);setError("");try{if(!p.isDemo&&p.project&&(p.saveState==="dirty"||p.saveState==="saving"||p.error)&&!await p.saveNow()){setError(copy.failed);return;}await auth.signOut();location.hash="login";}catch{setError(copy.failed);}finally{setLeaving(false);onLeavingChange(false);}}
+  return <div className="header-account"><a className="header-account-info" href="#dashboard" title={auth.user?.email||undefined}><KeyRound size={17} aria-hidden="true"/><span>{auth.user?.email||copy.account}</span></a><button className="header-logout" type="button" disabled={leaving||p.busy} onClick={()=>void leave()}>{leaving?copy.busy:copy.logout}</button>{error&&<span className="header-account-error" role="alert">{error}</span>}</div>;
 }
 
 function LoadingWorkspace({ lang }: { lang: Language }) {
@@ -227,35 +233,15 @@ function PrivateWorkspace({ lang, children }: { lang: Language; children: React.
   return <>{children}</>;
 }
 
-function AccountSession({ lang, onLeavingChange }: { lang: Language; onLeavingChange: (value: boolean) => void }) {
+function AccountSession({ lang }: { lang: Language }) {
   const auth = useAuth();
-  const p = useProject();
-  const [leaving, setLeaving] = useState(false);
-  const [failed, setFailed] = useState(false);
   const t = (fr: string, en: string, zh: string) => ({ fr, en, zh })[lang];
   const authIssue = auth.error && <span role="alert">
     {t("Impossible de vérifier votre compte. Réessayez.", "We could not verify your account status. Please retry.", "无法确认您的账号状态，请重试。")}
-    <button type="button" disabled={auth.loading || leaving} onClick={() => void auth.refreshAuth()}>{auth.loading ? t("Vérification…", "Checking…", "正在检查…") : t("Réessayer", "Retry", "重试")}</button>
+    <button type="button" disabled={auth.loading} onClick={() => void auth.refreshAuth()}>{auth.loading ? t("Vérification…", "Checking…", "正在检查…") : t("Réessayer", "Retry", "重试")}</button>
   </span>;
   if (!auth.user) return <div className="account-session"><a href="#login">{t("Connexion", "Sign in", "登录")}</a><a href="#demo">{t("Explorer un exemple", "Explore a sample", "查看示例工作台")}</a>{authIssue}</div>;
-  async function leave() {
-    if (leaving || p.busy) return;
-    setLeaving(true); onLeavingChange(true); setFailed(false);
-    try {
-      if (!p.isDemo && p.project && (p.saveState === "dirty" || p.saveState === "saving" || p.error) && !await p.saveNow()) { setFailed(true); return; }
-      await auth.signOut();
-      location.hash = "login";
-    } catch { setFailed(true); }
-    finally { setLeaving(false); onLeavingChange(false); }
-  }
-  return <div className="account-session">
-    <span>{auth.user.email}</span>
-    <a href="#dashboard">{t("Mon espace", "My workspace", "我的工作台")}</a>
-    {auth.staffRole && <a href="#admin">{t("Administration", "Administration", "管理后台")}</a>}
-    <button type="button" disabled={leaving || p.busy} onClick={() => void leave()}>{t("Déconnexion", "Sign out", "退出登录")}</button>
-    {authIssue}
-    {failed && <span role="alert">{t("Déconnexion interrompue. Vérifiez l’enregistrement et réessayez.", "Sign-out stopped. Check saving and retry.", "退出未完成，请检查保存状态后重试。")}</span>}
-  </div>;
+  return authIssue ? <div className="account-session">{authIssue}</div> : null;
 }
 
 function Home({ lang }: { lang: Language }) {

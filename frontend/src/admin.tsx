@@ -23,6 +23,7 @@ import {apiUrl,apiResult,projectRequest} from './lib/project-api';
 import type { Language } from "./seller-copy";
 import "./admin.css";
 import { ListingReview } from "./listing-review";
+import { BrokerReview } from "./brokers";
 
 const copy = {
   fr: {
@@ -49,6 +50,7 @@ const copy = {
     queue: "Centre d’examen",
     projectReviews: "Dossiers vendeurs",
     listingReviews: "Annonces publiques",
+    brokerApplications: "Vérification des courtiers",
     audit: "Journal des opérations",
     invite: "Inviter un membre",
     refresh: "Actualiser",
@@ -170,6 +172,7 @@ const copy = {
     queue: "Review center",
     projectReviews: "Seller projects",
     listingReviews: "Public listings",
+    brokerApplications: "Broker verification",
     audit: "Activity log",
     invite: "Invite a member",
     refresh: "Refresh",
@@ -289,6 +292,7 @@ const copy = {
     queue: "审核中心",
     projectReviews: "卖家项目",
     listingReviews: "公开房源",
+    brokerApplications: "经纪认证",
     audit: "操作记录",
     invite: "邀请成员",
     refresh: "刷新",
@@ -402,7 +406,7 @@ type ProjectFile = {
   name: string;
   storage_path: string;
 };
-type Tab = "queue" | "audit" | "invite" | "buyers";
+type Tab = "queue" | "audit" | "invite" | "buyers" | "brokers";
 type ReviewTab = "projects" | "listings";
 
 export function AdminPage({ lang }: { lang: Language }) {
@@ -674,6 +678,9 @@ export function AdminPage({ lang }: { lang: Language }) {
             <button className={tab === "buyers" ? "active" : ""} onClick={() => setTab("buyers")}>
               {buyerInboxCopy[lang].title}
             </button>
+            <button className={tab === "brokers" ? "active" : ""} onClick={() => setTab("brokers")}>
+              <ShieldCheck size={18} />{t.brokerApplications}
+            </button>
           </div>
           <div className="admin-nav-section">
             <span className="admin-nav-heading">{t.management}</span>
@@ -729,6 +736,7 @@ export function AdminPage({ lang }: { lang: Language }) {
           </p>
         )}
         {tab === "buyers" && <BuyerEnquiries key={auth.user.id} lang={lang} refreshKey={enquiryRefresh} />}
+        {tab === "brokers" && <BrokerReview key={auth.user.id} lang={lang} />}
         {tab === "queue" && (
           <>
             <div className="admin-review-tabs" role="tablist" aria-label={t.queue}>

@@ -27,11 +27,6 @@ import { QuebecCityOptions, QUEBEC_CITY_LIST_ID } from "./quebec-cities";
 import { useProject, type Details, type Plan } from "./project";
 import { ProjectStatus } from "./project-status";
 
-const dateToday = () => {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-};
-
 export function SellerFlow({ lang }: { lang: Language }) {
   const d = sellerCopy[lang];
   const [step, setStep] = useState(location.hash.endsWith('/edit') ? 1 : 0);
@@ -406,8 +401,6 @@ export function SellerFlow({ lang }: { lang: Language }) {
                         <option value="zh">中文</option>
                       </select>
                     </label>
-                    {input("date", d.date, "date", false, { min: dateToday() })}
-                    {select("time", d.time, d.times, false)}
                     <label className="field full-field">
                       <span>{d.notes}</span>
                       <textarea
