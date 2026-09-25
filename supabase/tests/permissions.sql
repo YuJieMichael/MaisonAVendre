@@ -57,6 +57,7 @@ select test_support.expect_error('select public.submit_project(current_setting('
 select public.save_project(current_setting('test.project_a')::uuid, 0, 'without',
   '{"address":"123 rue Exemple","city":"Montréal","postal":"H2X 1Y4","type":"0","broker":"0","timeline":"0","language":"fr","name":"Test Seller","email":"seller@example.test","phone":"5145550123","consent":true,"date":""}',
   array['photo'], true, '[]');
+select test_support.expect_error('select public.save_project(current_setting(''test.project_a'')::uuid,1,''without'',''{}'',''{}'',false,''[{"name":"Buyer A","date":"2026-10-03","time":"10:30"},{"name":"Buyer B","date":"2026-10-03","time":"10:30"}]'')', '22023');
 select test_support.expect_error('select public.save_project(current_setting(''test.project_a'')::uuid,0,''without'',''{}'',''{}'',false,''[]'')', '40001');
 select test_support.expect_error('select public.save_project(current_setting(''test.project_a'')::uuid,1,''without'',''{"role":"owner"}'',''{}'',false,''[]'')', '22023');
 select test_support.expect_error('select public.save_project(current_setting(''test.project_a'')::uuid,1,''without'',''{"date":"2026-02-31"}'',''{}'',false,''[]'')', '22023');

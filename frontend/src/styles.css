@@ -465,6 +465,11 @@ html[lang="zh-Hans"] h2 {
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
+.booked-slot-hint {
+  color: #7b6650;
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
 .calendar-heading h3 {
   margin: 4px 0 0;
   font-size: 1.2rem;

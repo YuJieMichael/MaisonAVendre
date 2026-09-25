@@ -38,12 +38,18 @@ vi.mock("../src/lib/project-api", async () => {
     downloadFile: mock.download,
   };
 });
-import { ProjectProvider, useProject } from "../src/project";
+import { isVisitSlotTaken, ProjectProvider, useProject } from "../src/project";
 
 let root: Root;
 let container: HTMLDivElement;
 let state: ReturnType<typeof useProject>;
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
+it("marks only an already scheduled date and time as occupied", () => {
+  const visits = [{ name: "Buyer", date: "2026-10-03", time: "10:30" }];
+  expect(isVisitSlotTaken(visits, "2026-10-03", "10:30")).toBe(true);
+  expect(isVisitSlotTaken(visits, "2026-10-03", "12:00")).toBe(false);
+  expect(isVisitSlotTaken(visits, "2026-10-04", "10:30")).toBe(false);
+});
 function Probe() {
   state = useProject();
   return null;

@@ -48,6 +48,8 @@ export type Details = {
 export type Photo = StoredFile;
 export type Document = StoredFile;
 export type Visit = { date: string; time: string; name: string };
+export const isVisitSlotTaken = (visits: Visit[], date: string, time: string) =>
+  visits.some((visit) => visit.date === date && visit.time === time);
 export type Buyer = {
   name: string;
   initials: string;

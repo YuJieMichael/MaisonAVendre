@@ -23,6 +23,11 @@ export function createApp({pool,authenticate,staffAccess,origin}){
  app.get('/api/admin/projects/:id/files/:fileId/content',async(req,res)=>content(res,await repo.adminContent(req.params.id,req.params.fileId)));
  app.post('/api/admin/projects/:id/review',async(req,res)=>res.json(await repo.review(req.user.id,req.params.id,req.body)));
  app.use((req,res)=>res.status(404).json({error:'NOT_FOUND'}));
- app.use((error,req,res,next)=>{const status=error.status || (error.code==='40001'?409:['22023','23514','22P02'].includes(error.code)?400:500);res.status(status).json({error:status===500?'INTERNAL_ERROR':error instanceof ApiError?error.message:status===413?'FILE_LIMIT':status===409?'REVISION_CONFLICT':/photo/i.test(error.message)?'PHOTO_REQUIRED':'VALIDATION'});});
+ app.use((error,req,res,next)=>{
+  const slotTaken=error.message==='VISIT_SLOT_TAKEN';
+  const status=error.status || (slotTaken||error.code==='40001'?409:['22023','23514','22P02'].includes(error.code)?400:500);
+  const code=status===500?'INTERNAL_ERROR':error instanceof ApiError?error.message:status===413?'FILE_LIMIT':slotTaken?'VISIT_SLOT_TAKEN':status===409?'REVISION_CONFLICT':/photo/i.test(error.message)?'PHOTO_REQUIRED':'VALIDATION';
+  res.status(status).json({error:code});
+ });
  return app;
 }

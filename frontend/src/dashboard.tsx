@@ -30,7 +30,7 @@ import {
   Video,
   X,
 } from "lucide-react";
-import { useProject } from "./project";
+import { isVisitSlotTaken, useProject } from "./project";
 import { sellerCopy, type Language } from "./seller-copy";
 import { ProjectStatus } from "./project-status";
 
@@ -291,6 +291,7 @@ export function Dashboard({ lang }: { lang: Language }) {
     zh: ["一", "二", "三", "四", "五", "六", "日"],
   }[lang];
   const visitSlots = ["09:00", "10:30", "12:00", "13:30", "15:00", "16:30", "18:00"];
+  const occupiedVisitSlots = new Set(visitSlots.filter((slot) => isVisitSlotTaken(visibleVisits, visitDate, slot)));
   const formatVisitTime = (value: string) => {
     const [hour, minute] = value.split(":").map(Number);
     return new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" }).format(
@@ -919,6 +920,10 @@ export function Dashboard({ lang }: { lang: Language }) {
                   e.preventDefault();
                   const data = new FormData(e.currentTarget);
                   if (!visitDate || !visitTime) return;
+                  if (isVisitSlotTaken(visibleVisits, visitDate, visitTime)) {
+                    setMessage(t("Ce créneau figure déjà dans votre calendrier. Choisissez-en un autre.", "That time is already on this calendar. Choose another slot.", "这个时间已在日历中安排，请选择其他时段。"));
+                    return;
+                  }
                   setVisits((old) => [
                     ...old,
                     {
@@ -1002,12 +1007,14 @@ export function Dashboard({ lang }: { lang: Language }) {
                   </div>
                   <div className="appointment-times" aria-label={t("Heure souhaitée", "Preferred time", "期望时间") }>
                     <span>{visitDate ? formatDate(visitDate) : t("Choisissez d’abord une date", "Choose a date first", "请先选择日期")}</span>
+                    {occupiedVisitSlots.size > 0 && <small className="booked-slot-hint">{t("Les heures grisées sont déjà réservées.", "Disabled times are already scheduled.", "灰色时段已被安排。")}</small>}
                     {visitSlots.map((slot) => (
                       <button
                         key={slot}
                         type="button"
                         aria-pressed={visitTime === slot}
-                        disabled={!visitDate}
+                        disabled={!visitDate || occupiedVisitSlots.has(slot)}
+                        title={occupiedVisitSlots.has(slot) ? t("Déjà réservé", "Already scheduled", "已安排") : undefined}
                         onClick={() => setVisitTime(slot)}
                       >
                         {formatVisitTime(slot)}
