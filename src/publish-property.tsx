@@ -2,7 +2,9 @@ import { useRef, useState, type FormEvent } from 'react';
 import type { Language } from './seller-copy';
 import { publicationCopy } from './publication-copy';
 import { backendConfigured } from './lib/supabase';
-import { parseProperty, PHOTO_LIMIT, type PublicProperty } from '../supabase/functions/_shared/listing-input';
+import { parseProperty, type PublicProperty } from '../supabase/functions/_shared/listing-input';
+import { prepareListingPhoto, type PhotoError } from './lib/listing-photo';
+import { photoCopy } from './photo-copy';
 import { VIDEO_LIMIT, parseVideo } from '../supabase/functions/_shared/listing-video';
 import {videoCopy} from './video-copy';
 import './enquiry.css';
@@ -16,6 +18,8 @@ export function PublishProperty({lang}:{lang:Language}) {
   const [videoConsent,setVideoConsent]=useState(false);
   const [videoError,setVideoError]=useState(false);
   const [photos,setPhotos]=useState<string[]>([]);
+  const [photoError,setPhotoError]=useState<PhotoError|null>(null);
+  const photoProcessing=useRef(false);
   const [draft,setDraft]=useState<Draft|null>(null);
   const [preview,setPreview]=useState(false);
   const [busy,setBusy]=useState(false);
@@ -25,13 +29,14 @@ export function PublishProperty({lang}:{lang:Language}) {
   const request=useRef({body:'',id:''});
   const sending=useRef(false);
   async function addPhotos(files:File[]) {
-    if(!files.length)return;
-    if(files.length+photos.length>4||files.some(f=>!['image/jpeg','image/png','image/webp'].includes(f.type)||f.size>PHOTO_LIMIT||!f.size)){setError('invalid');return;}
-    setLoadingPhotos(true);setError(null);
+    if(!files.length||photoProcessing.current)return;
+    if(files.length+photos.length>4){setPhotoError('count');return;}
+    photoProcessing.current=true;setLoadingPhotos(true);setPhotoError(null);setError(null);
     try {
-      const added=await Promise.all(files.map(file=>new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=reject;reader.readAsDataURL(file);}))); 
+      const added:string[]=[];
+      for(const file of files)added.push(await prepareListingPhoto(file));
       setPhotos(current=>[...current,...added]);
-    } catch {setError('error');} finally {setLoadingPhotos(false);}
+    } catch(err) {const reason=err instanceof Error?err.message:'';setPhotoError(['format','size','read'].includes(reason)?reason as PhotoError:'read');} finally {photoProcessing.current=false;setLoadingPhotos(false);}
   }
   async function addVideo(file:File|undefined) {
     if(!file)return;
@@ -79,7 +84,7 @@ export function PublishProperty({lang}:{lang:Language}) {
         <label>{c.area} *<input name="area" type="number" min="1" max="10000000" required step="1"/></label>
         <label className="enquiry-full">{c.description} *<textarea name="description" rows={5} maxLength={3000} required/></label>
       </div><div className="publication-checks"><label><input type="checkbox" name="parking"/>{c.parking}</label><label><input type="checkbox" name="outdoor"/>{c.outdoor}</label></div></fieldset>
-      <fieldset disabled={busy||loadingPhotos}><legend>{c.photos} *</legend><p>{c.photoHint}</p><input type="file" accept="image/jpeg,image/png,image/webp" multiple aria-label={c.photos} onChange={e=>{void addPhotos(Array.from(e.target.files||[]));e.target.value='';}}/>{loadingPhotos&&<p role="status">{c.loading}</p>}<div className="publication-photos">{photos.map((photo,i)=><figure key={i}><img src={photo} alt={`${c.photos} ${i+1}`}/><button type="button" onClick={()=>setPhotos(current=>current.filter((_,index)=>index!==i))}>{c.remove} {i+1}</button></figure>)}</div></fieldset>
+      <fieldset disabled={busy||loadingPhotos}><legend>{c.photos} *</legend><p>{photoCopy[lang].hint}</p>{photoError&&<p role="alert">{photoCopy[lang][photoError]}</p>}<input type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" multiple aria-label={c.photos} onChange={e=>{void addPhotos(Array.from(e.target.files||[]));e.target.value='';}}/>{loadingPhotos&&<p role="status">{c.loading}</p>}<div className="publication-photos">{photos.map((photo,i)=><figure key={i}><img src={photo} alt={`${c.photos} ${i+1}`}/><button type="button" onClick={()=>setPhotos(current=>current.filter((_,index)=>index!==i))}>{c.remove} {i+1}</button></figure>)}</div></fieldset>
       <fieldset disabled={busy||loadingPhotos}><legend>{v.label}</legend><p>{v.hint}</p><input type="file" accept="video/mp4,video/webm" aria-label={v.label} onChange={e=>{void addVideo(e.target.files?.[0]);e.target.value='';}}/>{videoError&&<p role="alert">{v.invalid}</p>}{video&&<><video controls playsInline preload="metadata" src={video} style={{width:'100%',maxHeight:360}}/><button type="button" onClick={()=>{setVideo('');setVideoConsent(false);setVideoError(false);}}>{c.remove}</button><label className="publication-consent"><input type="checkbox" required checked={videoConsent} onChange={e=>setVideoConsent(e.target.checked)}/>{v.consent}</label></>}</fieldset>
       <fieldset disabled={busy||loadingPhotos}><legend>{c.private}</legend><p>{c.privacy}</p><div className="enquiry-grid"><label>{c.name} *<input name="name" required maxLength={120} autoComplete="name"/></label><label>{c.email} *<input name="email" required type="email" maxLength={254} autoComplete="email"/></label><label>{c.phone}<input name="phone" type="tel" maxLength={40} autoComplete="tel"/></label></div><label className="publication-consent"><input name="consent" type="checkbox" required/>{c.consent} *</label></fieldset>
       <div className="enquiry-trap" aria-hidden="true"><label>Website<input name="website" tabIndex={-1} autoComplete="off"/></label></div><button type="submit" className="wide-cta" disabled={busy||loadingPhotos}>{c.preview}</button>
