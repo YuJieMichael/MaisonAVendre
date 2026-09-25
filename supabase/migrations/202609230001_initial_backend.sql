@@ -1,4 +1,4 @@
--- MaisonAVendre: private seller projects, reviewed by invited MFA staff.
+-- Propriété En Vente: private seller projects, reviewed by invited MFA staff.
 -- Run once as postgres using Supabase migrations. Never run with a browser key.
 begin;
 
@@ -379,7 +379,7 @@ begin
   return old;
 end;
 $$;
-create trigger maisonavendre_object_deleted after delete on storage.objects
+create trigger propriete_en_vente_object_deleted after delete on storage.objects
   for each row execute function private.invalidate_deleted_object();
 
 alter table public.projects enable row level security;

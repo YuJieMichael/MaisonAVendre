@@ -1,10 +1,10 @@
-# MaisonÀVendre
+# Propriété En Vente
 
-Montréal property discovery, trilingual seller workspace and Supabase backend built with **React, TypeScript, PostgreSQL and Supabase Edge Functions (Deno)**. Browse a clearly labelled sample catalogue, filter and sort properties, then open their details. Editable source includes authentication, private project storage, access rules and staff review.
+Québec-wide property discovery, trilingual seller workspace and Supabase backend built with **React, TypeScript, PostgreSQL and Supabase Edge Functions (Deno)**. Browse a clearly labelled sample catalogue, filter and sort properties, then open their details. Editable source includes authentication, private project storage, access rules and staff review.
 
-Plateforme immobilière montréalaise : catalogue de démonstration avec filtres et fiches détaillées, espace vendeur trilingue et backend Supabase. Le code source est disponible ; chaque nouvelle installation doit renseigner sa connexion Supabase.
+Plateforme immobilière pour tout le Québec : catalogue de démonstration avec filtres et fiches détaillées, espace vendeur trilingue et backend Supabase. Le code source est disponible ; chaque nouvelle installation doit renseigner sa connexion Supabase.
 
-产品方向：卖家自主推进，再按需要增加摄影、视频、市场分析、咨询或经纪帮助。首阶段服务区域为蒙特利尔，价格待定。
+产品方向：卖家自主推进，再按需要增加摄影、视频、市场分析、咨询或经纪帮助。服务范围为整个魁北克省，价格待定。
 
 本机已连接开发用 Supabase 项目，连接信息保存在不提交 Git 的 `.env.local`。新下载的源码仍需按照 [后端接入指南](docs/backend-setup.md) 配置自己的环境；没有配置时，账号入口会明确显示暂不可用。实际部署与待办记录见 [开发环境状态](docs/current-setup.md)。
 
@@ -12,13 +12,13 @@ Plateforme immobilière montréalaise : catalogue de démonstration avec filtres
 
 [Windows startup guide — English, Français, 中文](docs/local-start.md): install, start, stop and update the website locally.
 
-For VS Code, open `MaisonAVendre.code-workspace`, then use **Terminal → Run Task** to install dependencies and start the site. / Dans VS Code, ouvrez le fichier workspace puis lancez les tâches du terminal. / 用 VS Code 打开工作区文件，再从终端菜单安装依赖、启动网页。
+For VS Code, open `Propriete-En-Vente.code-workspace`, then use **Terminal → Run Task** to install dependencies and start the site. / Dans VS Code, ouvrez le fichier workspace puis lancez les tâches du terminal. / 用 VS Code 打开工作区文件，再从终端菜单安装依赖、启动网页。
 
 [Guide de démarrage Windows](docs/local-start.md) : installation, démarrage, arrêt et mise à jour du site en local.
 
 [Windows 手动启动说明](docs/local-start.md)：首次安装、以后启动、停止服务和从 GitHub 更新的步骤。
 
-PR merges are counted automatically in [Actions → PR merge count](https://github.com/YuJieMichael/MaisonAVendre/actions/workflows/merge-count.yml). / Les PR fusionnées sont comptées automatiquement dans Actions. / 合并到 `main` 的 PR 会自动计数，直接 push 不计入。
+PR merges are counted automatically in [Actions → PR merge count](https://github.com/YuJieMichael/Propriete-En-Vente/actions/workflows/merge-count.yml). / Les PR fusionnées sont comptées automatiquement dans Actions. / 合并到 `main` 的 PR 会自动计数，直接 push 不计入。
 
 Use Node.js 22.18+ or a supported newer LTS release.
 
@@ -113,6 +113,8 @@ docs/                Backend deployment and administrator setup
 
 ## Recovery provenance
 
-The linked GitHub repository initially contained only a README, and the original hosted site's source could not be retrieved. Homepage text, site-specific CSS, hero image and favicon were recovered from public files on the owner-supplied `https://maisonavendre.xieyujieee.chatgpt.site/`. React components, seller behavior and the dashboard were reconstructed as maintainable source. Original compiled framework bundles are not included. Original backend code and data have not been recovered.
+The linked GitHub repository initially contained only a README, and the predecessor hosted site's source could not be retrieved. Homepage text, site-specific CSS, hero image and favicon were recovered from public files on the owner-supplied legacy URL `https://maisonavendre.xieyujieee.chatgpt.site/`. React components, seller behavior and the dashboard were reconstructed as maintainable source. Original compiled framework bundles are not included. Original backend code and data have not been recovered.
 
 Icons are provided by `lucide-react` under its ISC licence. Dependency licences remain applicable. This reconstruction assigns no additional open-source licence to the owner's site content or images.
+
+Property publication / Publication des propriétés / 房源发布：The independent catalogue is available at `#proprietes`; sellers prepare and preview a listing at `#publier`. Reviewed publication source and activation steps are documented in [property publication](docs/property-publication.md). Public submission is disabled until backend and staff setup are complete.

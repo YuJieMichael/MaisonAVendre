@@ -15,15 +15,19 @@ import {
   LockKeyhole,
   ExternalLink,
 } from "lucide-react";
-import { useAuth, MfaPanel } from "./auth";
+import { useAuth } from "./auth";
+import { AdminEmailPanel } from "./admin-email";
+import { BuyerEnquiries, buyerInboxCopy } from "./buyer-enquiries";
 import { supabase } from "./lib/supabase";
 import type { Language } from "./seller-copy";
 import "./admin.css";
+import { ListingReview } from "./listing-review";
+import { publicationCopy } from "./publication-copy";
 
 const copy = {
   fr: {
     title: "Espace administration",
-    eyebrow: "MAISONÀVENDRE · ÉQUIPE",
+    eyebrow: "PROPRIETEAVENDRE · ÉQUIPE",
     intro:
       "Examinez les projets soumis et suivez les décisions de votre équipe.",
     back: "Retour au site",
@@ -141,7 +145,7 @@ const copy = {
   },
   en: {
     title: "Administration",
-    eyebrow: "MAISONÀVENDRE · TEAM",
+    eyebrow: "PROPRIETEAVENDRE · TEAM",
     intro: "Review submitted projects and follow your team’s decisions.",
     back: "Back to website",
     login: "Sign in",
@@ -257,7 +261,7 @@ const copy = {
   },
   zh: {
     title: "管理工作台",
-    eyebrow: "MAISONÀVENDRE · 团队",
+    eyebrow: "PROPRIETEAVENDRE · 团队",
     intro: "审核卖家提交的项目，跟进团队的处理记录。",
     back: "返回网站",
     login: "登录",
@@ -386,12 +390,13 @@ type ProjectFile = {
   name: string;
   storage_path: string;
 };
-type Tab = "queue" | "audit" | "invite";
+type Tab = "queue" | "audit" | "invite" | "listings" | "buyers";
 
 export function AdminPage({ lang }: { lang: Language }) {
   const t = copy[lang];
   const auth = useAuth();
   const [tab, setTab] = useState<Tab>("queue");
+  const [enquiryRefresh, setEnquiryRefresh] = useState(0);
   const [projects, setProjects] = useState<ReviewProject[]>([]);
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [selected, setSelected] = useState<ReviewProject | null>(null);
@@ -407,7 +412,7 @@ export function AdminPage({ lang }: { lang: Language }) {
   const [filesLoading, setFilesLoading] = useState(false);
   const fetchVersion = useRef(0);
   const fileVersion = useRef(0);
-  const canRead = !!auth.user && !!auth.staffRole && auth.aal === "aal2";
+  const canRead = !!auth.user && !!auth.staffRole && auth.adminVerified;
 
   const refresh = useCallback(async () => {
     if (!supabase || !canRead) return;
@@ -450,7 +455,7 @@ export function AdminPage({ lang }: { lang: Language }) {
     setSelected(null);
     setFiles([]);
     setMessage(null);
-  }, [auth.user?.id, auth.staffRole, auth.aal]);
+  }, [auth.user?.id, auth.staffRole, auth.adminVerified]);
 
   async function selectProject(project: ReviewProject) {
     if (!supabase || busy) return;
@@ -615,10 +620,10 @@ export function AdminPage({ lang }: { lang: Language }) {
     );
   if (!auth.user) return gate(t.loginTitle, t.loginText, true);
   if (!auth.staffRole) return gate(t.noAccess, t.noAccessText);
-  if (auth.aal !== "aal2")
+  if (!auth.adminVerified)
     return (
       <main className="admin-gate">
-        <MfaPanel lang={lang} onVerified={() => void auth.refreshAuth()} />
+        <AdminEmailPanel lang={lang} />
         <a href="#">{t.back}</a>
       </main>
     );
@@ -633,7 +638,7 @@ export function AdminPage({ lang }: { lang: Language }) {
         <div className="admin-brand">
           <ShieldCheck size={30} />
           <strong>
-            MaisonÀVendre<small>{t.title}</small>
+            Propriété En Vente<small>{t.title}</small>
           </strong>
         </div>
         <div className="admin-role">
@@ -641,6 +646,8 @@ export function AdminPage({ lang }: { lang: Language }) {
           <span>{auth.user.email}</span>
         </div>
         <nav aria-label={t.title}>
+          <button className={tab === "buyers" ? "active" : ""} onClick={() => setTab("buyers")}>{buyerInboxCopy[lang].title}</button>
+          <button className={tab === "listings" ? "active" : ""} onClick={() => setTab("listings")}>{publicationCopy[lang].review}</button>
           <button
             className={tab === "queue" ? "active" : ""}
             onClick={() => setTab("queue")}
@@ -682,6 +689,7 @@ export function AdminPage({ lang }: { lang: Language }) {
             className="admin-secondary"
             onClick={() => {
               setMessage(null);
+              setEnquiryRefresh(value => value + 1);
               void refresh();
             }}
             disabled={loading || busy}
@@ -698,6 +706,8 @@ export function AdminPage({ lang }: { lang: Language }) {
             {message.text}
           </p>
         )}
+        {tab === "listings" && <ListingReview key={auth.user.id} lang={lang} />}
+        {tab === "buyers" && <BuyerEnquiries key={auth.user.id} lang={lang} refreshKey={enquiryRefresh} />}
         {tab === "queue" && (
           <>
             <div className="admin-panel">

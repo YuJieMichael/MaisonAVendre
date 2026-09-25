@@ -25,10 +25,13 @@ import type { Language } from "./seller-copy";
 import "./original.css";
 import "./styles.css";
 import "./dashboard.css";
+import "./publication.css";
+import { publicationCopy } from "./publication-copy";
 
+const PublishProperty = lazy(() => import("./publish-property").then(module => ({ default: module.PublishProperty })));
 const Dashboard = lazy(() => import("./dashboard").then(module => ({ default: module.Dashboard })));
 const AdminPage = lazy(() => import("./admin").then(module => ({ default: module.AdminPage })));
-const SellerFlow = lazy(() => import("./seller-flow").then(module => ({ default: module.SellerFlow })));
+const EnquiryForm = lazy(() => import("./enquiry").then(module => ({ default: module.EnquiryForm })));
 const ListingsPage = lazy(() => import("./listings").then(module => ({ default: module.ListingsPage })));
 const FeaturedProperties = lazy(() => import("./listings").then(module => ({ default: module.FeaturedProperties })));
 
@@ -62,14 +65,12 @@ function Brand({ footer = false }: { footer?: boolean }) {
     <a
       href="#top"
       className={`brand ${footer ? "footer-brand" : ""}`}
-      aria-label="MaisonÀVendre"
+      aria-label="Propriété En Vente"
     >
       <span className="brand-mark">
         <House aria-hidden="true" />
       </span>
-      <span>
-        Maison<span>À</span>Vendre
-      </span>
+      <span>Propriété En Vente</span>
     </a>
   );
 }
@@ -78,7 +79,10 @@ function App() {
   const auth = useAuth();
   const [lang, setLang] = useState<Language>("fr");
   const [hash, setHash] = useState(location.hash);
+  const publishing = hash.startsWith("#publier");
+  const catalogue = hash.startsWith("#proprietes") || hash.startsWith("#propriete/");
   const selling = hash.startsWith("#vendre");
+  const [buyerSubmitted, setBuyerSubmitted] = useState(false);
   const dashboard = hash.startsWith("#dashboard");
   const demo = hash.startsWith("#demo");
   const admin = hash.startsWith("#admin");
@@ -101,13 +105,13 @@ function App() {
     document.documentElement.lang = lang === "zh" ? "zh-Hans" : lang;
   }, [lang]);
   useEffect(() => {
-    if (selling || dashboard || !hash || hash === "#top")
+    if (publishing || catalogue || selling || browsing || dashboard || !hash || hash === "#top")
       window.scrollTo({ top: 0, behavior: "instant" });
     else
       document
         .getElementById(hash.slice(1))
         ?.scrollIntoView({ block: "start" });
-  }, [hash, selling, dashboard]);
+  }, [hash, publishing, catalogue, selling, browsing, dashboard]);
   return (
     <>
       {signingOut && <p className="account-session" role="status">{{ fr: "Enregistrement et déconnexion…", en: "Saving and signing out…", zh: "正在保存并退出…" }[lang]}</p>}
@@ -120,8 +124,7 @@ function App() {
           aria-label={notices[lang].nav}
         >
           {d.nav.map((n, i) => (
-            <a
-              key={i}
+            <React.Fragment key={i}><a
               href={
                 i === 0
                   ? "#acheter"
@@ -136,17 +139,19 @@ function App() {
             >
               {n}
             </a>
+            {i === 1 && <a href="#proprietes" onClick={() => setMenu(false)} aria-current={catalogue ? "page" : undefined}>{publicationCopy[lang].listings}</a>}
+            </React.Fragment>
           ))}
           <a
             className="mobile-workspace-link"
-            href="#dashboard"
+            href="#vendre"
             onClick={() => setMenu(false)}
           >
             {
               {
-                fr: "Mon espace vendeur",
-                en: "Seller dashboard",
-                zh: "卖家工作台",
+                fr: "Mon projet de vente",
+                en: "Start selling",
+                zh: "填写卖房需求",
               }[lang]
             }
           </a>
@@ -167,14 +172,11 @@ function App() {
               </button>
             ))}
           </div>
-          <a className="account-button outline" href="#dashboard">
-            {
-              {
-                fr: "Mon espace vendeur",
-                en: "Seller dashboard",
-                zh: "卖家工作台",
-              }[lang]
-            }
+          <a className="header-login" href={auth.user ? "#dashboard" : "#login"} onClick={() => setMenu(false)}>
+            <KeyRound size={17} aria-hidden="true" />
+            {auth.user
+              ? { fr: "Mon espace", en: "My account", zh: "我的账号" }[lang]
+              : { fr: "Connexion", en: "Sign in", zh: "登录" }[lang]}
           </a>
           <button
             className="menu-button"
@@ -189,12 +191,12 @@ function App() {
         </div>
       </header>
       <ProjectProvider key={auth.user?.id ?? "guest"}>
-        <AccountSession lang={lang} onLeavingChange={setSigningOut} />
+        {(auth.user || dashboard || admin || authRoute) && <AccountSession lang={lang} onLeavingChange={setSigningOut} />}
         <main>
           <Suspense fallback={<LoadingWorkspace lang={lang} />}>
-          {authRoute ? <AuthPage lang={lang} /> : admin ? <AdminPage lang={lang} /> : demo ? <ProjectProvider mode="demo"><Dashboard lang={lang} /></ProjectProvider> : dashboard || selling ? (
-            auth.loading ? <LoadingWorkspace lang={lang} /> : !auth.user ? <AuthPage lang={lang} /> : <PrivateWorkspace lang={lang}>{dashboard ? <Dashboard lang={lang} /> : <SellerFlow lang={lang} />}</PrivateWorkspace>
-          ) : browsing ? <ListingsPage lang={lang} hash={hash} /> : <Home lang={lang} />}
+          {authRoute ? <AuthPage lang={lang} /> : admin ? <AdminPage lang={lang} /> : demo ? <ProjectProvider mode="demo"><Dashboard lang={lang} /></ProjectProvider> : publishing ? <PublishProperty lang={lang} /> : catalogue ? <ListingsPage lang={lang} hash={hash} /> : selling ? <EnquiryForm key="seller" kind="seller" lang={lang} /> : dashboard ? (
+            auth.loading ? <LoadingWorkspace lang={lang} /> : !auth.user ? <AuthPage lang={lang} /> : <PrivateWorkspace lang={lang}><Dashboard lang={lang} /></PrivateWorkspace>
+          ) : browsing ? buyerSubmitted ? <ListingsPage lang={lang} hash={hash} /> : <EnquiryForm key="buyer" kind="buyer" lang={lang} onContinue={() => setBuyerSubmitted(true)} /> : <Home lang={lang} />}
           </Suspense>
         </main>
       </ProjectProvider>
@@ -255,7 +257,7 @@ function Home({ lang }: { lang: Language }) {
   const [value, setValue] = useState("650000");
   const [tab, setTab] = useState<"seller" | "buyer">("seller");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sent, setSent] = useState(false);
+
   const formatted = new Intl.NumberFormat(
     lang === "zh" ? "zh-CN" : `${lang}-CA`,
     { style: "currency", currency: "CAD", maximumFractionDigits: 0 },
@@ -318,7 +320,7 @@ function Home({ lang }: { lang: Language }) {
             <p className="eyebrow">{d.routeEyebrow}</p>
             <h2>{d.routeTitle}</h2>
           </div>
-          <p className="section-note">MaisonÀVendre</p>
+          <p className="section-note">Propriété En Vente</p>
         </div>
         <div className="route-grid">
           {(["seller", "buyer"] as const).map((kind) => (
@@ -441,7 +443,7 @@ function Home({ lang }: { lang: Language }) {
               </div>
             </div>
             <a
-              href={tab === "seller" ? "#vendre" : "#contact"}
+              href={tab === "seller" ? "#vendre" : "#acheter"}
               className="wide-cta"
             >
               {d.calcCta}
@@ -481,42 +483,7 @@ function Home({ lang }: { lang: Language }) {
             中文
           </div>
         </div>
-        <form
-          className="contact-form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setSent(true);
-          }}
-        >
-          <p className="form-demo">{notices[lang].form}</p>
-          <div className="form-row">
-            <input
-              required
-              placeholder={d.name}
-              aria-label={d.name}
-              autoComplete="name"
-            />
-            <input
-              required
-              type="email"
-              placeholder={d.email}
-              aria-label={d.email}
-              autoComplete="email"
-            />
-          </div>
-          <input
-            type="tel"
-            placeholder={d.phone}
-            aria-label={d.phone}
-            autoComplete="tel"
-          />
-          <textarea required placeholder={d.project} aria-label={d.project} />
-          <button type="submit">
-            {d.contact}
-            <ArrowRight />
-          </button>
-          {sent && <p role="status">{notices[lang].sent}</p>}
-        </form>
+        <div className="contact-form"><a className="wide-cta" href="#acheter">{{en:"I want to buy",fr:"Je veux acheter",zh:"我要买房"}[lang]}</a><a className="wide-cta" href="#vendre">{{en:"I want to sell",fr:"Je veux vendre",zh:"我要卖房"}[lang]}</a></div>
       </section>
     </>
   );

@@ -15,11 +15,16 @@ export type Listing = {
   parking: boolean;
   outdoor: boolean;
   image: string;
+  real?: boolean;
+  photos?: string[];
+  video?: string;
+  description?: string;
+  neighbourhood?: string;
 };
 
 // Fictional catalogue, isolated from private seller projects. Stock photos are illustrative.
 const stock = (photo: string) => `https://images.unsplash.com/${photo}?auto=format&fit=crop&w=1100&q=85`;
-export const listingFallback = `${import.meta.env.BASE_URL}maisonavendre-hero.png`;
+export const listingFallback = `${import.meta.env.BASE_URL}propriete-en-vente-hero.png`;
 const photos = {
   house: stock("photo-1600596542815-ffad4c1539a9"),
   garden: stock("photo-1600585154340-be6161a56a0c"),

@@ -10,18 +10,24 @@ const mock = vi.hoisted(() => ({
   callbacks: new Set<(event: string, session: Session | null) => void>(),
   rpc: vi.fn(), getSession: vi.fn(), signOut: vi.fn(), assurance: vi.fn(),
   factors: vi.fn(), enroll: vi.fn(), verify: vi.fn(), exchange: vi.fn(), setSession: vi.fn(),
+  signUp: vi.fn(), resend: vi.fn(), signIn: vi.fn(),
+  invoke: vi.fn(),
+  getUser: vi.fn(),
 }));
 vi.mock("../src/lib/supabase", () => ({
   get backendConfigured() { return mock.configured; },
   get supabase() { return mock.configured ? {
     rpc: mock.rpc,
+    functions: { invoke: mock.invoke },
     auth: {
       getSession: mock.getSession, signOut: mock.signOut,
+      getUser: mock.getUser,
       onAuthStateChange: (callback: (event: string, session: Session | null) => void) => {
         mock.callbacks.add(callback);
         return { data: { subscription: { unsubscribe: () => mock.callbacks.delete(callback) } } };
       },
       exchangeCodeForSession: mock.exchange, setSession: mock.setSession,
+      signUp: mock.signUp, resend: mock.resend, signInWithPassword: mock.signIn,
       mfa: { getAuthenticatorAssuranceLevel: mock.assurance, listFactors: mock.factors, enroll: mock.enroll, challengeAndVerify: mock.verify },
     },
   } : null; },
@@ -29,6 +35,7 @@ vi.mock("../src/lib/supabase", () => ({
 }));
 import { AuthPage, AuthProvider, MfaPanel, useAuth } from "../src/auth";
 import { AdminPage } from "../src/admin";
+import { AdminEmailPanel } from "../src/admin-email";
 
 let root: Root;
 let container: HTMLDivElement;
@@ -50,9 +57,15 @@ async function render(child = <AuthPage lang="en" />, strict = false) {
 beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   vi.clearAllMocks();
+  sessionStorage.clear();
+  mock.signIn.mockReset();
+  mock.signUp.mockResolvedValue({ data: { session: null }, error: null });
+  mock.resend.mockResolvedValue({ error: null });
   mock.exchange.mockReset(); mock.setSession.mockReset(); mock.enroll.mockReset(); mock.verify.mockReset();
   mock.callbacks.clear(); mock.session = null; mock.configured = true;
   mock.rpc.mockResolvedValue({ data: null, error: null });
+  mock.invoke.mockReset();
+  mock.getUser.mockResolvedValue({data:{user:null},error:null});
   mock.getSession.mockImplementation(async () => ({ data: { session: mock.session }, error: null }));
   mock.assurance.mockResolvedValue({ data: { currentLevel: "aal1" }, error: null });
   mock.signOut.mockResolvedValue({ error: null });
@@ -63,6 +76,180 @@ beforeEach(() => {
 afterEach(async () => { await act(async () => root.unmount()); container.remove(); });
 
 describe("authentication boundaries", () => {
+  it('accepts tokens appended after the callback hash route and removes credentials from the URL',async()=>{
+    const confirmed=session('nested-confirmed');
+    mock.setSession.mockImplementation(async()=>{mock.session=confirmed;return {data:{session:confirmed},error:null};});
+    window.history.replaceState(null,'','/#auth/callback#access_token=nested-test-token&refresh_token=nested-test-refresh&type=signup');
+    await render(undefined,true);
+    expect(mock.setSession).toHaveBeenCalledTimes(1);
+    expect(mock.setSession).toHaveBeenCalledWith({access_token:'nested-test-token',refresh_token:'nested-test-refresh'});
+    expect(window.location.hash).toBe('#dashboard');
+    expect(window.location.href).not.toContain('nested-test');
+  });
+  it('keeps a nested recovery callback on the password reset route',async()=>{
+    const recovered=session('nested-recovery');
+    mock.setSession.mockResolvedValue({data:{session:recovered},error:null});
+    window.history.replaceState(null,'','/#auth/callback#access_token=recovery-test-token&refresh_token=recovery-test-refresh&type=recovery');
+    await render();
+    expect(window.location.hash).toBe('#reset-password');expect(state.recoverySession).toBe(true);
+  });
+  async function waitingSignIn() {
+    window.history.replaceState(null, '', '/#register');
+    sessionStorage.setItem('propriete-en-vente.pending-signup', JSON.stringify({email: 'waiting@example.test', at: Date.now()}));
+    await render();
+    const field = container.querySelector<HTMLInputElement>('input[name=password]')!;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(field, 'test-only-password');
+      field.dispatchEvent(new Event('input', {bubbles: true}));
+    });
+    await act(async () => container.querySelector('form')!.dispatchEvent(new Event('submit', {bubbles: true, cancelable: true})));
+    await flush();
+  }
+  it('signs in after confirmation in another browser without a pre-existing local session', async () => {
+    const verified = session('waiting');
+    verified.user.email_confirmed_at = new Date().toISOString();
+    mock.signIn.mockImplementation(async () => {
+      mock.session = verified;
+      for (const callback of mock.callbacks) callback('SIGNED_IN', verified);
+      return {data: {session: verified}, error: null};
+    });
+    await waitingSignIn();
+    expect(mock.signIn).toHaveBeenCalledWith({email: 'waiting@example.test', password: 'test-only-password'});
+    expect(mock.getUser).not.toHaveBeenCalled();
+    expect(window.location.hash).toBe('#dashboard');
+    expect(state.user?.id).toBe('waiting');
+    expect(sessionStorage.getItem('propriete-en-vente.pending-signup')).toBeNull();
+    expect(container.querySelector<HTMLInputElement>('input[name=password]')?.value ?? '').toBe('');
+  });
+  it('keeps an unconfirmed account on the waiting screen with a resend option', async () => {
+    const alert = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    mock.signIn.mockResolvedValue({data: {session: null}, error: {code: 'email_not_confirmed', message: 'Email not confirmed'}});
+    try {
+      await waitingSignIn();
+      expect(window.location.hash).toBe('#register');
+      expect(container.querySelector('[role=alert]')?.textContent).toContain('Your email has not been confirmed');
+      expect(alert).toHaveBeenCalledTimes(1);
+      expect(container.textContent).toContain('Resend confirmation email');
+      expect(container.querySelector<HTMLInputElement>('input[name=password]')!.value).toBe('');
+      expect(state.user).toBeNull();
+    } finally { alert.mockRestore(); }
+  });
+  it.each(['Invalid login credentials', 'Network request failed'])('does not describe %s as an unconfirmed email', async message => {
+    mock.signIn.mockRejectedValue(new Error(message));
+    await waitingSignIn();
+    expect(window.location.hash).toBe('#register');
+    expect(container.querySelector('[role=alert]')?.textContent).toBe(message);
+    expect(container.textContent).not.toContain('Your email has not been confirmed');
+    expect(sessionStorage.getItem('propriete-en-vente.pending-signup')).not.toContain('test-only-password');
+    expect(container.querySelector<HTMLButtonElement>('button[type=submit]')!.disabled).toBe(false);
+  });
+  it('clears the waiting password when changing the registration email', async () => {
+    mock.signIn.mockResolvedValue({data: {session: null}, error: {message: 'Invalid login credentials'}});
+    await waitingSignIn();
+    const change = [...container.querySelectorAll('button')].find(button => button.textContent === 'Change email address')!;
+    await act(async () => change.click());
+    expect(container.querySelector<HTMLInputElement>('input[name=password]')!.value).toBe('');
+    expect(container.querySelector('input[name=password-confirm]')).not.toBeNull();
+    expect(sessionStorage.getItem('propriete-en-vente.pending-signup')).toBeNull();
+  });
+  it('requires a server session before leaving the waiting screen', async () => {
+    mock.signIn.mockResolvedValue({data: {session: null}, error: null});
+    await waitingSignIn();
+    expect(window.location.hash).toBe('#register');
+    expect(container.querySelector('[role=alert]')).not.toBeNull();
+    expect(sessionStorage.getItem('propriete-en-vente.pending-signup')).toContain('waiting@example.test');
+  });
+  it('uses email verification without QR codes and only opens access after server approval', async () => {
+    mock.session=session('owner');
+    let approved=false;
+    mock.rpc.mockImplementation(async name=>({data:name==='get_my_staff_role'?'owner':approved,error:null}));
+    mock.invoke.mockImplementation(async (_name,{body})=>body.action==='send'
+      ? {data:{ok:true,challengeId:'challenge'},error:null}
+      : {data:{ok:false,error:'invalid_code'},error:null});
+    await render(<AdminEmailPanel lang="en"/>);
+    expect(container.querySelector('img')).toBeNull();
+    expect(state.adminVerified).toBe(false);
+    await act(async()=>container.querySelector<HTMLButtonElement>('button')!.click());
+    expect(container.textContent).toContain('Email sent');
+    expect(mock.invoke.mock.calls[0][1].body).toEqual({action:'send',language:'en'});
+    await act(async()=>container.querySelector('form')!.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})));
+    expect(state.adminVerified).toBe(false);
+    expect(container.textContent).toContain('incorrect, expired');
+    approved=true;
+    mock.invoke.mockResolvedValue({data:{ok:true},error:null});
+    await act(async()=>container.querySelector('form')!.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})));
+    expect(state.adminVerified).toBe(true);
+    await emit('SIGNED_OUT',null);
+    expect(state.adminVerified).toBe(false);
+  });
+  it('does not claim an email was sent when the provider is unconfigured',async()=>{
+    mock.session=session('owner');
+    mock.rpc.mockImplementation(async name=>({data:name==='get_my_staff_role'?'owner':false,error:null}));
+    mock.invoke.mockResolvedValue({data:null,error:{context:{json:async()=>({error:'email_not_configured'})}}});
+    await render(<AdminEmailPanel lang="en"/>);
+    await act(async()=>container.querySelector<HTMLButtonElement>('button')!.click());
+    expect(container.textContent).toContain('not configured yet');
+    expect(container.querySelector('input[name=email-code]')).toBeNull();
+    expect(state.adminVerified).toBe(false);
+  });
+  it("replaces successful signup with a waiting screen and advances only for the matching verified session", async () => {
+    window.history.replaceState(null, "", "/#register");
+    await render();
+    const input = async (name: string, value: string) => {
+      const field = container.querySelector<HTMLInputElement>(`input[name="${name}"]`)!;
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(field, value);
+        field.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    };
+    await input("email", "waiting@example.test");
+    await input("password", "test-only-password");
+    await input("password-confirm", "test-only-password");
+    await act(async () => container.querySelector('form')!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
+    await flush();
+    expect(mock.signUp).toHaveBeenCalledTimes(1);
+    expect(container.textContent).toContain("Confirm your email address");
+    expect(container.querySelector('form')).not.toBeNull();
+    expect(container.querySelector<HTMLInputElement>('input[type=password]')!.value).toBe('');
+    expect(sessionStorage.getItem("propriete-en-vente.pending-signup")).not.toContain("test-only-password");
+    await emit("SIGNED_IN", session("waiting"));
+    expect(window.location.hash).toBe("#register");
+    const verified = session("waiting"); verified.user.email_confirmed_at = new Date().toISOString();
+    await emit("SIGNED_IN", verified);
+    expect(window.location.hash).toBe("#dashboard");
+    expect(sessionStorage.getItem("propriete-en-vente.pending-signup")).toBeNull();
+  });
+
+  it("restores the waiting screen after refresh and does not report a failed resend as sent", async () => {
+    sessionStorage.setItem("propriete-en-vente.pending-signup", JSON.stringify({ email: "waiting@example.test", at: Date.now() }));
+    window.history.replaceState(null, "", "/#register");
+    mock.resend.mockResolvedValue({ error: { message: "Email rate limit exceeded" } });
+    await render();
+    const button = [...container.querySelectorAll('button')].find(el => el.textContent?.includes("Resend confirmation"))!;
+    await act(async () => button.click()); await flush();
+    expect(mock.resend).toHaveBeenCalledWith(expect.objectContaining({ type: "signup", email: "waiting@example.test" }));
+    expect(container.textContent).toContain("Email rate limit exceeded");
+    expect(container.textContent).not.toContain("Request sent.");
+    expect(button.disabled).toBe(true);
+  });
+
+  it("consumes a confirmed email session in a fresh browser without a PKCE exchange", async () => {
+    const confirmed = session("confirmed-link"); confirmed.user.email_confirmed_at = new Date().toISOString();
+    mock.setSession.mockImplementation(async () => {
+      mock.session = confirmed;
+      for (const callback of mock.callbacks) callback("SIGNED_IN", confirmed);
+      return { data: { session: confirmed }, error: null };
+    });
+    window.history.replaceState(null, "", "/#access_token=confirmation-token&refresh_token=confirmation-refresh&type=signup");
+    await render(<AuthPage lang="en" />, true);
+    expect(mock.setSession).toHaveBeenCalledTimes(1);
+    expect(mock.exchange).not.toHaveBeenCalled();
+    expect(window.location.hash).toBe("#dashboard");
+    expect(window.location.href).not.toContain("confirmation-token");
+    expect(state.recoverySession).toBe(false);
+    expect(state.invitationSession).toBe(false);
+  });
+
   it("shows an honest unavailable state without backend settings", async () => {
     mock.configured = false;
     await render();
@@ -125,7 +312,7 @@ describe("authentication boundaries", () => {
     await act(async () => retry!.click());
     await flush();
     expect(state.error).toBeNull();
-    expect(container.textContent).toContain("Protect your administrator access");
+    expect(container.textContent).toContain("Verify your administrator access");
   });
 
   it("does not claim a successful logout when the server rejects it", async () => {
@@ -199,5 +386,22 @@ describe("authentication boundaries", () => {
     expect(state.invitationSession).toBe(false);
     expect(state.user).toBeNull();
     expect(state.callbackError).toBe("Invalid token");
+  });
+
+  it("offers safe recovery after a missing PKCE verifier without granting access or showing SDK internals", async () => {
+    mock.exchange.mockResolvedValue({ data: { session: null }, error: { message: "PKCE code verifier not found in storage. Use @supabase/ssr." } });
+    window.history.replaceState(null, "", "/?code=missing-verifier-test#auth/callback");
+    await render(<AuthPage lang="zh" />, true);
+    expect(window.location.search).toBe("");
+    expect(state.user).toBeNull();
+    expect(state.recoverySession).toBe(false);
+    expect(state.invitationSession).toBe(false);
+    expect(container.textContent).toContain("链接登录未完成");
+    expect(container.textContent).toContain("同一个浏览器");
+    expect(container.textContent).not.toContain("PKCE");
+    expect(container.textContent).not.toContain("@supabase/ssr");
+    expect(container.querySelector('a[href="#login"]')).not.toBeNull();
+    expect(container.querySelector('a[href="#forgot-password"]')).not.toBeNull();
+    expect(container.querySelector('input[type="password"]')).toBeNull();
   });
 });

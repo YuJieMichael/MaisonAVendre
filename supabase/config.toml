@@ -1,4 +1,4 @@
-project_id = "maisonavendre"
+project_id = "propriete-en-vente"
 
 [api]
 enabled = true
@@ -28,6 +28,7 @@ file_size_limit = "10MiB"
 enabled = true
 site_url = "http://127.0.0.1:5173"
 additional_redirect_urls = ["http://127.0.0.1:5173/#auth/callback", "http://localhost:5173/#auth/callback", "http://127.0.0.1:4174/#auth/callback"]
+minimum_password_length = 8
 jwt_expiry = 3600
 enable_signup = true
 enable_anonymous_sign_ins = false
@@ -51,4 +52,20 @@ verify_enabled = true
 [functions.invite-staff]
 # getClaims + getUser inside the function verify the caller explicitly and
 # support asymmetric JWT signing keys. Never remove those checks.
+verify_jwt = false
+
+[functions.staff-email-verification]
+# Identity and signed JWT claims are validated inside every request.
+verify_jwt = false
+
+[functions.submit-enquiry]
+# Public intake: validated body, origin check and database rate limits.
+verify_jwt = false
+
+[functions.send-enquiry-batches]
+# Private scheduled worker: requires ENQUIRY_CRON_TOKEN, never a browser key.
+verify_jwt = false
+
+[functions.submit-listing]
+# Public intake, bounded photo payloads and service-side validation/rate limits.
 verify_jwt = false

@@ -69,8 +69,15 @@ export function createInvitationHandler(runtime: Runtime) {
       const claims = claimData?.claims;
       if (userError || claimError || !user || !claims || claims.sub !== user.id)
         return respond(401, "authentication_required");
-      if (claims.aal !== "aal2" || !user.email_confirmed_at)
+      if (!user.email_confirmed_at)
         return respond(403, "forbidden");
+      if (claims.aal !== "aal2") {
+        if (typeof claims.session_id !== "string") return respond(403, "forbidden");
+        const { data: verified, error: checkError } = await admin.rpc("check_staff_email_session", {
+          p_user_id: user.id, p_session_id: claims.session_id,
+        });
+        if (checkError || verified !== true) return respond(403, "forbidden");
+      }
       const { data: staff, error: staffError } = await admin
         .from("staff_members")
         .select("role,active")

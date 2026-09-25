@@ -8,9 +8,9 @@ import {
 import { createInvitationHandler } from "./invite-handler.ts";
 
 test("invitation URLs preserve the application path and reject unsafe configuration", () => {
-  assert.deepEqual(invitationConfig("https://example.com/MaisonAVendre"), {
+  assert.deepEqual(invitationConfig("https://example.com/propriete-en-vente"), {
     origin: "https://example.com",
-    redirectTo: "https://example.com/MaisonAVendre/#auth/callback",
+    redirectTo: "https://example.com/propriete-en-vente/#auth/callback",
   });
   assert.equal(
     invitationConfig("http://127.0.0.1:5173").redirectTo,
@@ -78,6 +78,7 @@ test("JSON body parser enforces size even without a Content-Length header", asyn
 });
 
 type Scenario = {
+  emailSession?: boolean;
   aal?: string;
   role?: string;
   active?: boolean;
@@ -115,6 +116,7 @@ function scenario(options: Scenario = {}) {
             claims: {
               sub: options.claimUser || "owner-id",
               aal: options.aal || "aal2",
+              session_id: "00000000-0000-4000-8000-000000000001",
             },
           },
           error: options.claimError ? new Error("bad signature") : null,
@@ -150,6 +152,7 @@ function scenario(options: Scenario = {}) {
     },
     rpc: async (...args: unknown[]) => {
       calls.push({ name: "rpc", args });
+      if (args[0] === 'check_staff_email_session') return {data:options.emailSession === true,error:null};
       return {
         error: options.assignmentError
           ? { code: "23505", message: "PRIVATE DATABASE ERROR" }
@@ -160,7 +163,7 @@ function scenario(options: Scenario = {}) {
   const runtime: Parameters<typeof createInvitationHandler>[0] = {
     env: (name) =>
       ({
-        APP_ORIGIN: "https://example.com/MaisonAVendre/",
+        APP_ORIGIN: "https://example.com/propriete-en-vente/",
         SUPABASE_URL: "https://project.supabase.co",
         SUPABASE_SERVICE_ROLE_KEY: "private-test-key",
       })[name],
@@ -201,12 +204,21 @@ test("owner with verified MFA creates an operator and audit through the atomic R
   assert.ok(calls.some((call) => call.name === "getClaims"));
   assert.deepEqual(calls.find((call) => call.name === "invite")?.args, [
     "staff@example.com",
-    { redirectTo: "https://example.com/MaisonAVendre/#auth/callback" },
+    { redirectTo: "https://example.com/propriete-en-vente/#auth/callback" },
   ]);
   assert.deepEqual(calls.find((call) => call.name === "rpc")?.args, [
     "finish_staff_invite",
     { p_actor_id: "owner-id", p_invited_user_id: "invited-id" },
   ]);
+});
+
+test('owner with a server-verified email session may invite; ordinary AAL1 may not',async()=>{
+  const {handler,calls}=scenario({aal:'aal1',emailSession:true});
+  assert.equal((await handler(request())).status,200);
+  assert.ok(calls.some(c=>c.name==='rpc' && c.args[0]==='check_staff_email_session'));
+  const denied=scenario({aal:'aal1',emailSession:false});
+  assert.equal((await denied.handler(request())).status,403);
+  assert.ok(!denied.calls.some(c=>c.name==='invite'));
 });
 
 for (const [label, options] of Object.entries({
@@ -223,7 +235,7 @@ for (const [label, options] of Object.entries({
     const result = await handler(request());
     assert.ok([401, 403].includes(result.status));
     assert.equal(
-      calls.some((call) => ["invite", "rpc"].includes(call.name)),
+      calls.some((call) => call.name === 'invite' || (call.name === 'rpc' && call.args[0] === 'finish_staff_invite')),
       false,
     );
   });

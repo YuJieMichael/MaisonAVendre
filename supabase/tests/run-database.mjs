@@ -15,6 +15,11 @@ try {
     path.join(testsDirectory, 'bootstrap.sql'),
     ...migrationFiles.map((name) => path.join(migrationsDirectory, name)),
     path.join(testsDirectory, 'permissions.sql'),
+    path.join(testsDirectory, 'enquiries.sql'),
+    path.join(testsDirectory, 'listings.sql'),
+    path.join(testsDirectory, 'listing-videos.sql'),
+    path.join(testsDirectory, 'staff-email.sql'),
+    path.join(testsDirectory, 'buyer-inbox.sql'),
   ];
   for (const file of files) {
     try {

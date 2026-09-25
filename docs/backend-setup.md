@@ -1,4 +1,4 @@
-# MaisonÀVendre 后端接入指南
+# Propriété En Vente 后端接入指南
 
 当前仓库包含可部署的后端实现，但尚未填入真实 Supabase 项目的连接信息，也不代表云端已经部署完成。组织页面地址不能用于连接数据库；需要先在组织内创建一个 **Project（项目）**。
 
@@ -7,10 +7,10 @@
 ## 1. 在自己的账号下建立项目
 
 1. 登录 [Supabase 控制台](https://supabase.com/dashboard)，进入自己的组织，选择 **New project**。
-2. 在免费组织/方案下创建初期测试项目，例如 `maisonavendre-test`。创建页面如显示付费升级或额外费用，先确认所选方案，不要把本指南理解为购买授权。
+2. 在免费组织/方案下创建初期测试项目，例如 `propriete-en-vente-test`。创建页面如显示付费升级或额外费用，先确认所选方案，不要把本指南理解为购买授权。
 3. 设置并安全保存数据库密码。该密码不需要填进网页，也不要发送到聊天或提交到 GitHub。
 4. 如果页面提供具体区域，优先选 **Canada (Central) / `ca-central-1`**。如果只显示大区，查看是否可切换具体区域；仅选 Americas 不代表位于加拿大。[区域说明](https://supabase.com/docs/guides/platform/regions)
-5. 等待项目建立完成，记录项目设置里的 **Project ID / Reference ID**。也可在项目地址 `https://supabase.com/dashboard/project/PROJECT_REF` 中识别它。`/org/...` 地址内的组织 ID，以及仓库 `supabase/config.toml` 中的本地名称 `maisonavendre`，都不是云端项目 ID。
+5. 等待项目建立完成，记录项目设置里的 **Project ID / Reference ID**。也可在项目地址 `https://supabase.com/dashboard/project/PROJECT_REF` 中识别它。`/org/...` 地址内的组织 ID，以及仓库 `supabase/config.toml` 中的本地名称 `propriete-en-vente`，都不是云端项目 ID。
 
 建议先用测试项目验证完整流程，再为真实客户建立独立生产项目。创建免费项目只是开始；存储用量、邮件服务、备份与后续方案以控制台当前显示为准。
 
@@ -61,9 +61,9 @@ npx supabase db push
 | 正式网站示例 | `https://your-domain.example/` |
 | 正式回跳示例 | `https://your-domain.example/#auth/callback` |
 
-以 Vite 实际显示的地址为准：`localhost`、`127.0.0.1` 和不同端口需要分别配置。如果网页位于子目录，例如 `/MaisonAVendre/`，Site URL 与回跳地址都必须保留该路径。正式环境使用明确地址，不配置任意站点通配符。[回跳地址说明](https://supabase.com/docs/guides/auth/redirect-urls)
+以 Vite 实际显示的地址为准：`localhost`、`127.0.0.1` 和不同端口需要分别配置。如果网页位于子目录，例如 `/propriete-en-vente/`，Site URL 与回跳地址都必须保留该路径。正式环境使用明确地址，不配置任意站点通配符。[回跳地址说明](https://supabase.com/docs/guides/auth/redirect-urls)
 
-确认、找回密码和邀请邮件模板应保留 Supabase 的验证链接 `{{ .ConfirmationURL }}`，不要改成普通工作台链接。注册及密码重置使用 PKCE；测试时使用发起请求的同一浏览器打开邮件链接。
+确认、找回密码和邀请邮件模板应保留 Supabase 的验证链接 `{{ .ConfirmationURL }}`，不要改成普通工作台链接。注册及密码重置采用纯前端邮件流程（implicit），Supabase 验证邮件后返回登录状态，由 AuthProvider 验证并清除地址栏中的令牌；不依赖原浏览器的 PKCE 临时凭据。旧 PKCE 链接保留兼容处理，但缺少原凭据时需重新申请新邮件。
 
 Supabase 默认发信服务主要用于测试，收件人受到限制，通常只能发送给组织团队中的邮箱。真实客户注册和邀请需要配置自己的 SMTP、发件人域名及邮件服务；不要为了收到邮件把客户加成 Supabase 组织成员，也不要关闭邮箱验证来绕过发信问题。[SMTP 说明](https://supabase.com/docs/guides/auth/auth-smtp)
 
@@ -110,7 +110,7 @@ npx supabase secrets set APP_ORIGIN=https://YOUR_APP_DOMAIN/
 npx supabase functions deploy invite-staff
 ```
 
-把 `APP_ORIGIN` 换成网页的真实基础 URL。开发测试可用 `http://127.0.0.1:5173/`；部署在子目录时例如 `https://your-domain.example/MaisonAVendre/`。不要加 `#admin` 或查询参数。它决定邀请邮件回跳和允许的浏览器来源；本实现每个环境配置一个基础 URL。
+把 `APP_ORIGIN` 换成网页的真实基础 URL。开发测试可用 `http://127.0.0.1:5173/`；部署在子目录时例如 `https://your-domain.example/propriete-en-vente/`。不要加 `#admin` 或查询参数。它决定邀请邮件回跳和允许的浏览器来源；本实现每个环境配置一个基础 URL。
 
 `invite-staff` 的 `verify_jwt = false` 是当前实现的明确配置：函数内部仍然逐次校验真实用户、经过验证的 JWT 声明、`aal2` MFA 和数据库中的 active owner。不要删除这些校验，也不要把它当成匿名邀请接口。[Edge 部署说明](https://supabase.com/docs/guides/functions/deploy)
 
