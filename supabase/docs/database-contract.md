@@ -13,8 +13,11 @@ separate, deliberately limited projection and explicit publication workflow.
 - `staff_members` is the authority for staff privileges. `user_metadata` and
   client-supplied role fields are ignored. No authenticated client can insert,
   update or delete a staff record, including the owner.
-- Active `owner` / `operator` staff need a JWT with `aal: "aal2"` to read other
-  sellers' projects, access their files, read audit records or review a project.
+- Active `owner` / `operator` staff normally need a JWT with `aal: "aal2"` or
+  a session-bound email check to read other sellers' projects, access their
+  files, read audit records or review a project. An explicitly allowlisted,
+  confirmed active owner may bypass step-up; the private allowlist stores user
+  IDs and is not directly readable by authenticated clients.
 - `get_my_staff_role()` returns only the current user's active role without the
   MFA requirement. This lets the app display the enrollment/challenge screen;
   it does not grant staff access to seller data.
