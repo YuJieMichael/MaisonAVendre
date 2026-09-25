@@ -3,7 +3,7 @@ import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, expect, it, vi } from 'vitest';
 import { EnquiryForm } from '../src/enquiry';
-import { parseEnquiry, enquiriesCsv } from '../supabase/functions/_shared/enquiry';
+import { parseEnquiry, enquiriesCsv } from '../../supabase/functions/_shared/enquiry';
 vi.mock('../src/lib/supabase',()=>({backendConfigured:true}));
 let root: ReturnType<typeof createRoot>;
 afterEach(async()=>{if(root)await act(async()=>root.unmount());document.body.innerHTML='';vi.unstubAllEnvs();vi.unstubAllGlobals();});

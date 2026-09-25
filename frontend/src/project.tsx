@@ -138,13 +138,15 @@ function sameContent(left: ProjectRow, right: ProjectRow) {
 export function ProjectProvider({
   children,
   mode = "cloud",
+  projectId,
 }: {
   children: ReactNode;
   mode?: "cloud" | "demo";
+  projectId?: string | null;
 }) {
   const { user } = useAuth();
   const isDemo = mode === "demo";
-  const identity = `${mode}:${user?.id || ""}`;
+  const identity = `${mode}:${user?.id || ""}:${projectId ?? ""}`;
   const identityRef = useRef(identity);
   identityRef.current = identity;
   const [draft, setDraft] = useState<ProjectDraft>(initialDraft);
@@ -152,6 +154,7 @@ export function ProjectProvider({
   const projectRef = useRef<ProjectRow | null>(null);
   const [project, setProject] = useState<ProjectRow | null>(null);
   const [files, setFiles] = useState<StoredFile[]>([]);
+  useEffect(()=>()=>{for(const file of files)if(file.url.startsWith('blob:'))URL.revokeObjectURL(file.url);},[files]);
   const [sample, setSample] = useState(isDemo);
   const [buyers, setBuyers] = useState<Buyer[]>([
     { name: "Camille R.", initials: "CR", source: "Web", status: 0 },
@@ -209,7 +212,7 @@ export function ProjectProvider({
     setError(null);
   }, []);
   const reloadProject = useCallback(async () => {
-    if (isDemo || !user) return;
+    if (isDemo || !user || projectId === null) return;
     generation.current += 1;
     const ticket = scope();
     queue.current = new SerialQueue();
@@ -219,7 +222,7 @@ export function ProjectProvider({
     setSaveState("loading");
     clearError();
     try {
-      const record = await ensureProject();
+      const record = projectId ? await fetchProject(projectId) : await ensureProject();
       assertCurrent(ticket);
       if (record.owner_id !== user.id) throw new Error("SESSION_UNAVAILABLE");
       const media = await listFiles(record.id);
@@ -247,6 +250,7 @@ export function ProjectProvider({
   }, [
     isDemo,
     user?.id,
+    projectId,
     acceptRow,
     clearError,
     fail,
@@ -270,8 +274,8 @@ export function ProjectProvider({
     savedSequence.current = 0;
     setSample(isDemo);
     clearError();
-    setLoading(!isDemo && !!user);
-    setSaveState(!isDemo && user ? "loading" : "saved");
+    setLoading(!isDemo && !!user && projectId !== null);
+    setSaveState(!isDemo && user && projectId !== null ? "loading" : "saved");
     void reloadProject();
     return () => {
       active.current = false;
@@ -333,6 +337,20 @@ export function ProjectProvider({
       return false;
     }
   }, [persist, fail, scope, isCurrent, isDemo]);
+  useEffect(()=>{
+    if(isDemo || !projectId)return;
+    let leaving=false;
+    const guard=(event:HashChangeEvent)=>{
+      const next=new URL(event.newURL).hash;
+      if(next.startsWith(`#projects/${projectId}`))return;
+      if(sequence.current===savedSequence.current&&!busyRef.current)return;
+      event.stopImmediatePropagation();history.replaceState(null,'',event.oldURL);
+      if(leaving)return;leaving=true;
+      void saveNow().then(saved=>{leaving=false;if(saved)location.hash=next;});
+    };
+    addEventListener('hashchange',guard,true);
+    return()=>removeEventListener('hashchange',guard,true);
+  },[isDemo,projectId,saveNow]);
   useEffect(() => {
     if (
       isDemo ||

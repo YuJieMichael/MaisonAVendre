@@ -20,6 +20,7 @@ try {
     path.join(testsDirectory, 'listing-videos.sql'),
     path.join(testsDirectory, 'staff-email.sql'),
     path.join(testsDirectory, 'buyer-inbox.sql'),
+    path.join(testsDirectory, 'multiple-projects.sql'),
   ];
   for (const file of files) {
     try {

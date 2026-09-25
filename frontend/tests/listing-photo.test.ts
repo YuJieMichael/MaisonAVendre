@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import {afterEach,expect,it,vi} from 'vitest';
 import {prepareListingPhoto,INPUT_PHOTO_LIMIT} from '../src/lib/listing-photo';
-import {PHOTO_LIMIT} from '../supabase/functions/_shared/listing-input';
+import {PHOTO_LIMIT} from '../../supabase/functions/_shared/listing-input';
 afterEach(()=>{vi.restoreAllMocks();vi.unstubAllGlobals();});
 it('accepts JPEG files with missing browser MIME metadata',async()=>{
   expect(await prepareListingPhoto(new File(['image'],'HOUSE.JPG'))).toMatch(/^data:image\/jpeg;base64,/);

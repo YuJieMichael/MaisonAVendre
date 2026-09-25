@@ -3,7 +3,7 @@ import type {Language} from './seller-copy';
 import {supabase} from './lib/supabase';
 import {publicationCopy} from './publication-copy';
 import {publicListingsEnabled} from './lib/public-listings';
-import type {PublicProperty} from '../supabase/functions/_shared/listing-input';
+import type {PublicProperty} from '../../supabase/functions/_shared/listing-input';
 import './publication.css';
 type Submission={id:string;property:PublicProperty;contact:{name:string;email:string;phone:string};photo_paths:string[];video_path:string|null;status:'pending'|'published'|'rejected';revision:number;review_note:string};
 // Mounted only inside AdminPage's staff + MFA guard. Database repeats both checks.

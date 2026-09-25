@@ -1,6 +1,6 @@
 import {useEffect,useState} from 'react';
 import {supabase} from './supabase';
-import {parseProperty} from '../../supabase/functions/_shared/listing-input';
+import {parseProperty} from '../../../supabase/functions/_shared/listing-input';
 import {listingFallback,type Listing} from '../listings-data';
 export const publicListingsEnabled=!!supabase&&import.meta.env.VITE_LISTING_PUBLICATION_ENABLED==='true';
 export function usePublicListings(){

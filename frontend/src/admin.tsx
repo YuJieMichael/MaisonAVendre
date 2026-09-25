@@ -19,6 +19,7 @@ import { useAuth } from "./auth";
 import { AdminEmailPanel } from "./admin-email";
 import { BuyerEnquiries, buyerInboxCopy } from "./buyer-enquiries";
 import { supabase } from "./lib/supabase";
+import {apiUrl,apiResult,projectRequest} from './lib/project-api';
 import type { Language } from "./seller-copy";
 import "./admin.css";
 import { ListingReview } from "./listing-review";
@@ -419,7 +420,7 @@ export function AdminPage({ lang }: { lang: Language }) {
     const version = ++fetchVersion.current;
     setLoading(true);
     const [p, a] = await Promise.all([
-      supabase
+      apiUrl ? apiResult('/admin/projects') : supabase
         .from("projects")
         .select(
           "id,owner_id,details,plan,services,completed,status,revision,updated_at,review_note",
@@ -427,7 +428,7 @@ export function AdminPage({ lang }: { lang: Language }) {
         .eq("status", "submitted")
         .order("updated_at", { ascending: true })
         .limit(100),
-      supabase
+      apiUrl ? apiResult('/admin/audit') : supabase
         .from("audit_events")
         .select("id,actor_id,project_id,action,metadata,created_at")
         .order("created_at", { ascending: false })
@@ -465,7 +466,7 @@ export function AdminPage({ lang }: { lang: Language }) {
     setFiles([]);
     setMessage(null);
     setFilesLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = apiUrl ? await apiResult(`/admin/projects/${project.id}/files`) : await supabase
       .from("project_files")
       .select("id,kind,name,storage_path")
       .eq("project_id", project.id)
@@ -494,7 +495,7 @@ export function AdminPage({ lang }: { lang: Language }) {
     }
     setBusy(true);
     setMessage(null);
-    const { error } = await supabase.rpc("review_project", {
+    const { error } = apiUrl ? await apiResult(`/admin/projects/${selected.id}/review`,{method:'POST',body:JSON.stringify({revision:selected.revision,decision,note:note.trim()})}) : await supabase.rpc("review_project", {
       p_project_id: selected.id,
       p_expected_revision: selected.revision,
       p_decision: decision,
@@ -520,6 +521,7 @@ export function AdminPage({ lang }: { lang: Language }) {
     if (!supabase) return;
     const popup = window.open("about:blank", "_blank");
     if (popup) popup.opener = null;
+    if(apiUrl){try{if(!selected)throw Error();const response=await projectRequest(`/admin/projects/${selected.id}/files/${file.id}/content`);const url=URL.createObjectURL(await response.blob());if(popup)popup.location.replace(url);setTimeout(()=>URL.revokeObjectURL(url),60000);}catch{popup?.close();setMessage({text:t.fileError,error:true});}return;}
     const { data, error } = await supabase.storage
       .from("project-files")
       .createSignedUrl(file.storage_path, 60);

@@ -3,7 +3,7 @@ import React,{act} from 'react';
 import {createRoot} from 'react-dom/client';
 import {afterEach,expect,it,vi} from 'vitest';
 vi.hoisted(() => { vi.stubEnv('VITE_LISTING_PUBLICATION_ENABLED', 'false'); });
-import {parseListingInput,parseProperty} from '../supabase/functions/_shared/listing-input';
+import {parseListingInput,parseProperty} from '../../supabase/functions/_shared/listing-input';
 import {PublishProperty} from '../src/publish-property';
 import {ListingsPage} from '../src/listings';
 vi.mock('../src/lib/supabase',()=>({backendConfigured:true,supabase:null}));

@@ -26,10 +26,13 @@ import "./original.css";
 import "./styles.css";
 import "./dashboard.css";
 import "./publication.css";
+import "./workspace.css";
 import { publicationCopy } from "./publication-copy";
 
 const PublishProperty = lazy(() => import("./publish-property").then(module => ({ default: module.PublishProperty })));
 const Dashboard = lazy(() => import("./dashboard").then(module => ({ default: module.Dashboard })));
+const Projects = lazy(() => import("./projects").then(module => ({default:module.Projects})));
+const SellerFlow = lazy(() => import("./seller-flow").then(module => ({default:module.SellerFlow})));
 const AdminPage = lazy(() => import("./admin").then(module => ({ default: module.AdminPage })));
 const EnquiryForm = lazy(() => import("./enquiry").then(module => ({ default: module.EnquiryForm })));
 const ListingsPage = lazy(() => import("./listings").then(module => ({ default: module.ListingsPage })));
@@ -84,6 +87,9 @@ function App() {
   const selling = hash.startsWith("#vendre");
   const [buyerSubmitted, setBuyerSubmitted] = useState(false);
   const dashboard = hash.startsWith("#dashboard");
+  const projects = hash.startsWith('#projects') || dashboard;
+  const projectId = /^#projects\/([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})(?:\/|$)/i.exec(hash)?.[1] ?? null;
+  const editingProject = !!projectId && hash.endsWith('/edit');
   const demo = hash.startsWith("#demo");
   const admin = hash.startsWith("#admin");
   const browsing = hash.startsWith("#acheter") || hash.startsWith("#propriete/");
@@ -116,7 +122,7 @@ function App() {
     <>
       {signingOut && <p className="account-session" role="status">{{ fr: "Enregistrement et déconnexion…", en: "Saving and signing out…", zh: "正在保存并退出…" }[lang]}</p>}
       <div inert={signingOut}>
-      <header className="site-header">
+      <header className={`site-header ${projects || admin || demo ? 'workspace-header' : ''}`}>
         <Brand />
         <nav
           id="main-navigation"
@@ -190,17 +196,17 @@ function App() {
           </button>
         </div>
       </header>
-      <ProjectProvider key={auth.user?.id ?? "guest"}>
+      <ProjectProvider key={auth.user?.id ?? "guest"} projectId={projectId}>
         {(auth.user || dashboard || admin || authRoute) && <AccountSession lang={lang} onLeavingChange={setSigningOut} />}
         <main>
           <Suspense fallback={<LoadingWorkspace lang={lang} />}>
-          {authRoute ? <AuthPage lang={lang} /> : admin ? <AdminPage lang={lang} /> : demo ? <ProjectProvider mode="demo"><Dashboard lang={lang} /></ProjectProvider> : publishing ? <PublishProperty lang={lang} /> : catalogue ? <ListingsPage lang={lang} hash={hash} /> : selling ? <EnquiryForm key="seller" kind="seller" lang={lang} /> : dashboard ? (
-            auth.loading ? <LoadingWorkspace lang={lang} /> : !auth.user ? <AuthPage lang={lang} /> : <PrivateWorkspace lang={lang}><Dashboard lang={lang} /></PrivateWorkspace>
+          {authRoute ? <AuthPage lang={lang} /> : admin ? <AdminPage lang={lang} /> : demo ? <ProjectProvider mode="demo"><Dashboard lang={lang} /></ProjectProvider> : publishing ? <PublishProperty lang={lang} /> : catalogue ? <ListingsPage lang={lang} hash={hash} /> : selling ? <EnquiryForm key="seller" kind="seller" lang={lang} /> : projects ? (
+            auth.loading ? <LoadingWorkspace lang={lang} /> : !auth.user ? <AuthPage lang={lang} /> : !projectId ? <Projects lang={lang}/> : <PrivateWorkspace lang={lang}>{editingProject?<SellerFlow key={projectId} lang={lang}/>:<Dashboard key={projectId} lang={lang} />}</PrivateWorkspace>
           ) : browsing ? buyerSubmitted ? <ListingsPage lang={lang} hash={hash} /> : <EnquiryForm key="buyer" kind="buyer" lang={lang} onContinue={() => setBuyerSubmitted(true)} /> : <Home lang={lang} />}
           </Suspense>
         </main>
       </ProjectProvider>
-      <footer>
+      <footer hidden={projects || admin || demo}>
         <Brand footer />
         <p>{d.footer}</p>
         <p>{d.legal}</p>

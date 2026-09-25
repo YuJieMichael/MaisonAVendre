@@ -1,4 +1,4 @@
-import { PHOTO_LIMIT } from '../../supabase/functions/_shared/listing-input';
+import { PHOTO_LIMIT } from '../../../supabase/functions/_shared/listing-input';
 
 export type PhotoError = 'count' | 'format' | 'size' | 'read';
 export const INPUT_PHOTO_LIMIT = 20 * 1024 * 1024;

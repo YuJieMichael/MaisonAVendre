@@ -361,3 +361,29 @@ describe("seller project persistence boundaries", () => {
     expect(state.busy).toBe(false);
   });
 });
+
+it('does not implicitly create a project on the list page', async () => {
+  await act(async()=>{root.render(<ProjectProvider projectId={null}><Probe/></ProjectProvider>);await tick();});
+  expect(mock.ensure).not.toHaveBeenCalled();
+  expect(state.project).toBeNull();
+});
+it('loads a selected project and discards a late response after switching', async () => {
+  const old=deferred<ProjectRow>();
+  mock.fetch.mockImplementation((id:string)=>id==='first'?old.promise:Promise.resolve({...row(),id}));
+  await act(async()=>{root.render(<ProjectProvider projectId="first"><Probe/></ProjectProvider>);await tick();});
+  await act(async()=>{root.render(<ProjectProvider projectId="second"><Probe/></ProjectProvider>);await tick();});
+  await act(async()=>{old.resolve({...row(),id:'first'});await tick();});
+  expect(state.project?.id).toBe('second');
+  expect(mock.ensure).not.toHaveBeenCalled();
+});
+it('saves dirty edits before leaving a project through hash navigation', async () => {
+  history.replaceState(null,'','#projects/project-alice/overview');
+  await act(async()=>{root.render(<ProjectProvider projectId="project-alice"><Probe/></ProjectProvider>);await tick();});
+  const pending=deferred<ProjectRow>();mock.save.mockReturnValueOnce(pending.promise);
+  await act(async()=>state.setForm({...state.form,address:'Unsaved home'}));
+  await act(async()=>{const oldURL=location.href;history.replaceState(null,'','#projects');dispatchEvent(new HashChangeEvent('hashchange',{oldURL,newURL:location.href}));await tick();});
+  expect(location.hash).toBe('#projects/project-alice/overview');
+  expect(mock.save).toHaveBeenCalledOnce();
+  await act(async()=>{pending.resolve({...row(),details:{address:'Unsaved home'},revision:1});await tick();});
+  expect(location.hash).toBe('#projects');
+});

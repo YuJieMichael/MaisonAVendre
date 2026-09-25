@@ -33,7 +33,7 @@ const dateToday = () => {
 
 export function SellerFlow({ lang }: { lang: Language }) {
   const d = sellerCopy[lang];
-  const [step, setStep] = useState(location.hash === "#vendre/edit" ? 1 : 0);
+  const [step, setStep] = useState(location.hash.endsWith('/edit') ? 1 : 0);
   const {
     plan,
     setPlan,
@@ -49,6 +49,7 @@ export function SellerFlow({ lang }: { lang: Language }) {
     isDemo,
     project,
     error,
+    saveNow,
   } = useProject();
   const [photoError, setPhotoError] = useState(false);
   const [previewError, setPreviewError] = useState(false);
@@ -144,9 +145,9 @@ export function SellerFlow({ lang }: { lang: Language }) {
   return (
     <div className="sell-page">
       <div className="sell-shell">
-        <a className="back-link" href="#top">
+        <a className="back-link" href={`#projects/${project?.id}/overview`} onClick={async e=>{e.preventDefault();if(await saveNow())location.hash=`projects/${project?.id}/overview`;}}>
           <ArrowLeft />
-          {d.back}
+          {{fr:'Retour au projet',en:'Back to project',zh:'返回项目'}[lang]}
         </a>
         <div className="sell-heading">
           <p className="eyebrow">{d.eyebrow}</p>
@@ -512,7 +513,7 @@ export function SellerFlow({ lang }: { lang: Language }) {
                         try {
                           if (await completeProject()) {
                             setSample(false);
-                            location.hash = "dashboard";
+                            location.hash = `projects/${project?.id}/overview`;
                           }
                         } finally {
                           setFinishing(false);

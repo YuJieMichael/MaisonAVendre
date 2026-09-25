@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {parseVideo,VIDEO_LIMIT} from '../supabase/functions/_shared/listing-video';
+import {parseVideo,VIDEO_LIMIT} from '../../supabase/functions/_shared/listing-video';
 const encode=(mime:string,bytes:Uint8Array)=>`data:${mime};base64,${Buffer.from(bytes).toString('base64')}`;
 describe('listing videos',()=>{
   it('keeps videos optional',()=>{expect(parseVideo(undefined)).toBeNull();expect(parseVideo('')).toBeNull();});

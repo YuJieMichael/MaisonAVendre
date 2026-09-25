@@ -159,9 +159,10 @@ export function Dashboard({ lang }: { lang: Language }) {
     isDemo,
     busy,
     project,
+    saveNow,
   } = useProject();
   const sectionFromHash = (): Section => {
-    const value = location.hash.split("/")[1];
+    const value = location.hash.split("/")[location.hash.startsWith('#projects/')?2:1];
     return sections.includes(value as Section)
       ? (value as Section)
       : "overview";
@@ -188,10 +189,10 @@ export function Dashboard({ lang }: { lang: Language }) {
     return () => removeEventListener("hashchange", change);
   }, []);
   const go = (next: Section) => {
-    const base = isDemo ? "demo" : "dashboard";
+    const base = isDemo ? "demo" : `projects/${project?.id}`;
     location.hash = next === "overview" ? base : `${base}/${next}`;
   };
-  const editLink = isDemo ? "#register" : "#vendre/edit";
+  const editLink = isDemo ? "#register" : `#projects/${project?.id}/edit`;
   const reviewLabel = {
     draft: t("Brouillon privé", "Private draft", "私有草稿"),
     submitted: t("À vérifier", "Awaiting review", "待审核"),
@@ -308,7 +309,7 @@ export function Dashboard({ lang }: { lang: Language }) {
             return (
               <a
                 key={key}
-                href={`#${isDemo ? "demo" : "dashboard"}${key === "overview" ? "" : `/${key}`}`}
+                href={`#${isDemo ? "demo" : `projects/${project?.id}`}${key === "overview" ? "" : `/${key}`}`}
                 className={section === key ? "active" : ""}
                 aria-current={section === key ? "page" : undefined}
               >
@@ -321,6 +322,7 @@ export function Dashboard({ lang }: { lang: Language }) {
             );
           })}
         </nav>
+        {!isDemo&&<a className="workspace-back" href="#projects" onClick={async e=>{e.preventDefault();if(await saveNow())location.hash='projects';}}><ChevronLeft/>{t('Tous les projets','All projects','全部项目')}</a>}
         <div className="sidebar-help">
           <Handshake />
           <strong>
@@ -362,27 +364,16 @@ export function Dashboard({ lang }: { lang: Language }) {
         </div>
         <div className="workspace-heading">
           <div>
-            <p className="eyebrow">
-              {t(
-                "VOTRE VENTE, À VOTRE FAÇON",
-                "YOUR SALE, YOUR WAY",
-                "您的房产，由您掌握",
-              )}
-            </p>
             <h1>
               {section === "overview"
-                ? t(
-                    "Chaque étape, au même endroit.",
-                    "Every step, in one place.",
-                    "卖房的每一步，都在这里。",
-                  )
+                ? address
                 : names[sections.indexOf(section)]}
             </h1>
             <p>
               {t(
-                "La technologie pour avancer. Un humain pour décider.",
-                "Technology to move forward. A human to decide.",
-                "科技让流程更快，经纪让决定更稳。",
+                "Informations, documents et rendez-vous de cette propriété.",
+                "Information, documents and viewings for this property.",
+                "管理这套房产的资料、文件与看房安排。",
               )}
             </p>
           </div>
